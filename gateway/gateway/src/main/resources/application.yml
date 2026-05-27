@@ -1,0 +1,16 @@
+server:
+  port: 8081 # Puerto de entrada único del Marketplace
+
+spring:
+  application:
+    name: api-gateway # Nombre con el que aparecerá en Eureka
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true # Permite redirigir automáticamente usando los nombres de los microservicios
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/ # La URL del servidor que ya tienes corriendo
