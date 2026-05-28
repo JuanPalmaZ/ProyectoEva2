@@ -1,16 +1,40 @@
 server:
-  port: 8081 # Puerto de entrada único del Marketplace
+  port: 8080 # Nota: Es tradición usar 8080 para el Gateway. Si usas 8081, asegúrate de que ms-clientes no intente usarlo también.
 
 spring:
   application:
-    name: api-gateway # Nombre con el que aparecerá en Eureka
+    name: api-gateway
   cloud:
     gateway:
       discovery:
         locator:
-          enabled: true # Permite redirigir automáticamente usando los nombres de los microservicios
+          enabled: false # Apagamos el modo automático
+      
+      # ==========================================
+      # MAPA DE RUTAS (Estándar de Producción)
+      # ==========================================
+      routes:
+        # 1. Ruta hacia el módulo de Clientes
+        - id: clientes-route
+          uri: lb://MS-CLIENTES # lb:// significa "Load Balancer" (Busca en Eureka)
+          predicates:
+            - Path=/api/clientes/** # Todo lo que empiece así, se va a MS-CLIENTES
+
+        # 2. Ruta hacia el módulo de Identidad (Para tu rediseño futuro)
+        # - id: identidad-route
+        #   uri: lb://MS-IDENTIDAD
+        #   predicates:
+        #     - Path=/api/auth/**, /api/usuarios/**
+
+        # 3. Ruta hacia el módulo de Ventas (Para tu rediseño futuro)
+        # - id: ventas-route
+        #   uri: lb://MS-VENTAS
+        #   predicates:
+        #     - Path=/api/ventas/**
 
 eureka:
   client:
+    register-with-eureka: true # El Gateway también debe registrarse en el panel
+    fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka/ # La URL del servidor que ya tienes corriendo
+      defaultZone: http://localhost:8761/eureka/
