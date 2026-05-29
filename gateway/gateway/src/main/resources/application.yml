@@ -1,40 +1,45 @@
 server:
-  port: 8080 # Nota: Es tradición usar 8080 para el Gateway. Si usas 8081, asegúrate de que ms-clientes no intente usarlo también.
+  port: 8080 # Puerto principal. Todo el tráfico de Postman o tu frontend entrará por aquí.
 
 spring:
   application:
-    name: api-gateway
+    name: api-gateway # Nombre con el que el Gateway aparecerá en Eureka
   cloud:
     gateway:
       discovery:
         locator:
-          enabled: false # Apagamos el modo automático
+          enabled: false # Apagado para usar enrutamiento manual (estándar de producción)
       
       # ==========================================
-      # MAPA DE RUTAS (Estándar de Producción)
+      # REGLAS DE ENRUTAMIENTO (Rutas hacia tus microservicios)
       # ==========================================
       routes:
-        # 1. Ruta hacia el módulo de Clientes
-        - id: clientes-route
-          uri: lb://MS-CLIENTES # lb:// significa "Load Balancer" (Busca en Eureka)
+        # 1. Todo lo de identidad y perfiles se va a MS-USUARIOS
+        - id: usuarios-route
+          uri: lb://MS-USUARIOS
           predicates:
-            - Path=/api/clientes/** # Todo lo que empiece así, se va a MS-CLIENTES
+            - Path=/api/usuarios/**
 
-        # 2. Ruta hacia el módulo de Identidad (Para tu rediseño futuro)
-        # - id: identidad-route
-        #   uri: lb://MS-IDENTIDAD
-        #   predicates:
-        #     - Path=/api/auth/**, /api/usuarios/**
+        # 2. Todo lo de tarjetas y finanzas se va a MS-CLIENTES
+        - id: clientes-route
+          uri: lb://MS-CLIENTES
+          predicates:
+            - Path=/api/clientes/**
 
-        # 3. Ruta hacia el módulo de Ventas (Para tu rediseño futuro)
-        # - id: ventas-route
-        #   uri: lb://MS-VENTAS
-        #   predicates:
-        #     - Path=/api/ventas/**
+        # 3. NUEVO: Todo lo de proveedores y documentos se va a MS-PROVEEDORES
+        - id: proveedores-route
+          uri: lb://MS-PROVEEDORES # 'lb://' le pide la IP a Eureka basándose en el nombre
+          predicates:
+            - Path=/api/proveedores/**
 
+# ==========================================
+# CONFIGURACIÓN DE EUREKA
+# ==========================================
 eureka:
   client:
-    register-with-eureka: true # El Gateway también debe registrarse en el panel
-    fetch-registry: true
+    register-with-eureka: true # El Gateway también se registra en el directorio
+    fetch-registry: true       # Descarga el mapa de dónde están los demás servicios
     service-url:
       defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
