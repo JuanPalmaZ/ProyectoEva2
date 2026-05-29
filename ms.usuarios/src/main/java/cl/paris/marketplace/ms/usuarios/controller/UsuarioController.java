@@ -1,0 +1,99 @@
+package cl.paris.marketplace.ms.usuarios.controller;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import cl.paris.marketplace.ms.usuarios.dto.PerfilRequest;
+import cl.paris.marketplace.ms.usuarios.dto.PerfilResponse;
+import cl.paris.marketplace.ms.usuarios.dto.RolRequest;
+import cl.paris.marketplace.ms.usuarios.dto.RolResponse;
+import cl.paris.marketplace.ms.usuarios.dto.UsuarioCompletoResponse;
+import cl.paris.marketplace.ms.usuarios.dto.UsuarioRequest;
+import cl.paris.marketplace.ms.usuarios.dto.UsuarioResponse;
+import cl.paris.marketplace.ms.usuarios.service.UsuarioService; 
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/usuarios") // Ruta base actualizada para este microservicio
+public class UsuarioController {
+
+    private final UsuarioService usuarioService;
+
+    // Inyección de dependencias por constructor
+    public UsuarioController(UsuarioService usuarioService) {
+        this.usuarioService = usuarioService;
+    }
+
+    // ==========================================
+    // ENDPOINTS: USUARIOS
+    // ==========================================
+    
+    @PostMapping
+    public ResponseEntity<UsuarioResponse> registrarUsuario(@Valid @RequestBody UsuarioRequest request) {
+        UsuarioResponse response = usuarioService.registrarUsuario(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UsuarioResponse>> buscarUsuarios(@RequestParam(required = false) String email) {
+        // Endpoint para listar todos o buscar por correo
+        return ResponseEntity.ok(usuarioService.buscarUsuarios(email));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> obtenerUsuarioPorId(@PathVariable UUID id) {
+        UsuarioResponse response = usuarioService.obtenerUsuarioPorId(id);
+        return ResponseEntity.ok(response);
+    }
+
+    // ==========================================
+    // ENDPOINTS: PERFILES
+    // ==========================================
+    
+    @PostMapping("/perfiles")
+    public ResponseEntity<PerfilResponse> crearPerfil(@Valid @RequestBody PerfilRequest request) {
+        PerfilResponse response = usuarioService.crearPerfil(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{usuarioId}/perfil")
+    public ResponseEntity<PerfilResponse> obtenerPerfil(@PathVariable UUID usuarioId) {
+        PerfilResponse response = usuarioService.obtenerPerfilPorUsuarioId(usuarioId);
+        return ResponseEntity.ok(response);
+    }
+
+    // ==========================================
+    // ENDPOINTS: ROLES
+    // ==========================================
+
+    @PostMapping("/roles")
+    public ResponseEntity<RolResponse> crearRol(@Valid @RequestBody RolRequest request) {
+        RolResponse response = usuarioService.crearRol(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/roles")
+    public ResponseEntity<List<RolResponse>> listarRoles() {
+        return ResponseEntity.ok(usuarioService.listarRoles());
+    }
+
+    // ==========================================
+    // ENDPOINTS: VISTA CONSOLIDADA (Usa Feign)
+    // ==========================================
+    
+    @GetMapping("/{id}/completo")
+    public ResponseEntity<UsuarioCompletoResponse> obtenerUsuarioCompleto(@PathVariable UUID id) {
+        UsuarioCompletoResponse response = usuarioService.obtenerUsuarioCompleto(id);
+        return ResponseEntity.ok(response);
+    }
+}
