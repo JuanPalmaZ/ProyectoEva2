@@ -52,3 +52,9 @@ eureka:
       defaultZone: http://localhost:8761/eureka/ # Dirección del servidor Eureka
   instance:
     prefer-ip-address: true # Facilita la comunicación interna mediante IP
+
+jwt:
+  # Esta es una clave secreta generada en Hexadecimal (Mínimo 256 bits requeridos por seguridad)
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  # Tiempo de vida del token en milisegundos (86400000 ms = 1 día)
+  expiration: 86400000

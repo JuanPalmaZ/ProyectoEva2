@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // Importación obligatoria para los candados
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,13 +36,16 @@ public class ProveedorController {
     // ENDPOINTS: PROVEEDORES
     // ==========================================
 
+    // Un proveedor puede registrar su empresa, o un admin darlo de alta
+    @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ProveedorResponse> crearProveedor(@Valid @RequestBody ProveedorRequest request) {
         ProveedorResponse response = proveedorService.crearProveedor(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // Usamos la ruta /usuario/{usuarioId} para listar los proveedores que creó alguien en específico
+    // Permite al proveedor ver sus empresas asociadas, o al administrador revisarlas
+    @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ProveedorResponse>> listarProveedoresPorUsuario(@PathVariable UUID usuarioId) {
         List<ProveedorResponse> response = proveedorService.listarProveedoresPorUsuario(usuarioId);
@@ -52,6 +56,8 @@ public class ProveedorController {
     // ENDPOINTS: DOCUMENTOS
     // ==========================================
 
+    // Solo el proveedor puede subir sus documentos legales de validación, o el admin en su defecto
+    @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @PostMapping("/documentos")
     public ResponseEntity<DocumentoResponse> agregarDocumento(@Valid @RequestBody DocumentoRequest request) {
         DocumentoResponse response = proveedorService.agregarDocumento(request);
@@ -62,6 +68,8 @@ public class ProveedorController {
     // ENDPOINTS: VISTA CONSOLIDADA
     // ==========================================
 
+    // Trae el perfil del proveedor con todos sus documentos tributarios/legales
+    @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @GetMapping("/{id}/completo")
     public ResponseEntity<ProveedorCompletoResponse> obtenerProveedorCompleto(@PathVariable UUID id) {
         ProveedorCompletoResponse response = proveedorService.obtenerProveedorCompleto(id);
