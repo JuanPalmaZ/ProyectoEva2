@@ -3,10 +3,11 @@ package cl.paris.marketplace.ms.usuarios.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.crypto.password.PasswordEncoder; 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import cl.paris.marketplace.ms.usuarios.client.MetodoPagoClient;
+import cl.paris.marketplace.ms.usuarios.client.MetodoPagoClient; // ¡NUEVO! Importación para atrapar el portazo de seguridad
 import cl.paris.marketplace.ms.usuarios.dto.MetodoPagoResponse;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilRequest;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilResponse;
@@ -22,6 +23,7 @@ import cl.paris.marketplace.ms.usuarios.model.Usuario;
 import cl.paris.marketplace.ms.usuarios.repository.PerfilRepository;
 import cl.paris.marketplace.ms.usuarios.repository.RolRepository;
 import cl.paris.marketplace.ms.usuarios.repository.UsuarioRepository;
+import feign.FeignException;
 
 @Service
 public class UsuarioService {
@@ -30,21 +32,24 @@ public class UsuarioService {
     private final RolRepository rolRepository;
     private final PerfilRepository perfilRepository;
     private final UsuarioMapper usuarioMapper;
-    
-    // El cliente Feign para comunicarse con ms-clientes
     private final MetodoPagoClient metodoPagoClient;
+    
+    // Declaramos la máquina encriptadora
+    private final PasswordEncoder passwordEncoder;
 
     // Inyección por constructor
     public UsuarioService(UsuarioRepository usuarioRepository,
             RolRepository rolRepository,
             PerfilRepository perfilRepository,
             UsuarioMapper usuarioMapper,
-            MetodoPagoClient metodoPagoClient) {
+            MetodoPagoClient metodoPagoClient,
+            PasswordEncoder passwordEncoder) { 
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.perfilRepository = perfilRepository;
         this.usuarioMapper = usuarioMapper;
         this.metodoPagoClient = metodoPagoClient;
+        this.passwordEncoder = passwordEncoder; 
     }
 
     // ==========================================
@@ -61,6 +66,11 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("El Rol especificado no existe."));
 
         Usuario usuario = usuarioMapper.toUsuarioEntity(request, rol);
+        
+        // Aquí ocurre la magia de seguridad. 
+        // Sobrescribimos la contraseña plana con el Hash de BCrypt justo antes de guardar.
+        usuario.setPasswordHash(passwordEncoder.encode(request.password()));
+        
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         
         return usuarioMapper.toUsuarioResponse(usuarioGuardado);
@@ -160,9 +170,16 @@ public class UsuarioService {
         List<MetodoPagoResponse> metodosPagoResponse;
         try {
             metodosPagoResponse = metodoPagoClient.obtenerMetodosPagoUsuario(usuarioId);
+        } catch (FeignException.Forbidden e) {
+            // ¡EL CANDADO! Si el admin intentó ver las tarjetas, ms-clientes devuelve 403.
+            // Lo atrapamos aquí en silencio y devolvemos la lista vacía.
+            System.out.println("Acceso denegado: El usuario no tiene rol CLIENTE para ver métodos de pago.");
+            metodosPagoResponse = java.util.Collections.emptyList();
+        } catch (FeignException e) {
+            System.out.println("Error de conexión con ms-clientes: " + e.getMessage());
+            metodosPagoResponse = java.util.Collections.emptyList();
         } catch (Exception e) {
-            // Si el microservicio de clientes está caído, devolvemos una lista vacía
-            // en lugar de tumbar todo el sistema de usuarios.
+            System.out.println("Error inesperado al buscar métodos de pago: " + e.getMessage());
             metodosPagoResponse = java.util.Collections.emptyList();
         }
 
