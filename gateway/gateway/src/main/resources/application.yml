@@ -15,7 +15,6 @@ spring:
         - id: usuarios-route
           uri: lb://MS-USUARIOS
           predicates:
-            # CORREGIDO: Sin espacios después de las comas
             - Path=/api/usuarios/**,/api/roles/**,/api/auth/**
 
         # 2. Todo lo de tarjetas y finanzas se va a MS-CLIENTES
@@ -29,6 +28,12 @@ spring:
           uri: lb://MS-PROVEEDORES
           predicates:
             - Path=/api/proveedores/**
+
+        # ¡NUEVO! 4. Todo lo de catálogo, stock y categorías se va a MS-PRODUCTOS
+        - id: productos-route
+          uri: lb://MS-PRODUCTOS  # <-- OJO: Debe ser IGUAL al spring.application.name de tu ms_productos
+          predicates:
+            - Path=/api/productos/**
 
 # ==========================================
 # CONFIGURACIÓN DE EUREKA

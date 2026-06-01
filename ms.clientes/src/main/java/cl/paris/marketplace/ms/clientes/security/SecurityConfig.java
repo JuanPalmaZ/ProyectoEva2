@@ -22,20 +22,22 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth
-                // Todos los endpoints de clientes requieren estar autenticados como base
-                .anyRequest().authenticated()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            // Agregamos nuestro filtro ANTES del filtro tradicional de usuario/contraseña
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(auth -> auth
+            // ¡ESTA LÍNEA ES VITAL EN SPRING SECURITY 6!
+            .requestMatchers("/error").permitAll() 
+            
+            // Tus otras rutas permitidas si las hay (ej: /api/auth/**)
+            .anyRequest().authenticated()
+        )
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+    return http.build();
+}
     
 }

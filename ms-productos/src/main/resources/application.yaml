@@ -52,3 +52,6 @@ eureka:
    defaultZone: http://localhost:8761/eureka/ # Dirección del servidor Eureka
  instance:
   prefer-ip-address: true # Facilita la comunicación interna mediante IP
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970

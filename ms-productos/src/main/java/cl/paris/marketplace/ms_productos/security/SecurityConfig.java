@@ -1,4 +1,4 @@
-package cl.paris.marketplace.ms_proveedores.security;
+package cl.paris.marketplace.ms_productos.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +21,7 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
-@Bean
+    @Bean
 public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
         .csrf(AbstractHttpConfigurer::disable)
@@ -39,4 +39,5 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 
     return http.build();
 }
+    
 }

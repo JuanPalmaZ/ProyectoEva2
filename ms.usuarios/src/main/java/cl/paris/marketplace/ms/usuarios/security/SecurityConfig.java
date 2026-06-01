@@ -31,7 +31,6 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        // AQUÍ ESTÁ LA CORRECCIÓN: Le volvemos a pasar el parámetro que yo te hice borrar
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
@@ -50,7 +49,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/usuarios", "/api/usuarios/**", 
                     "/api/roles", "/api/roles/**", 
-                    "/api/auth", "/api/auth/**"
+                    "/api/auth", "/api/auth/**",
+                    "/error" // Permite exponer el verdadero error 500/400 en lugar de camuflarse en un 403
                 ).permitAll() 
                 .anyRequest().authenticated() 
             )
