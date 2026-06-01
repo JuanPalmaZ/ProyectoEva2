@@ -1,5 +1,4 @@
-package cl.paris.marketplace.ms_productos.security;
-
+package cl.paris.marketplace.ms.administracion.security;
 import java.io.IOException;
 import java.util.List;
 

@@ -32,16 +32,18 @@ public class ClienteController {
     // ENDPOINTS: MÉTODOS DE PAGO
     // ==========================================
     
-    // ¡NUEVO! Solo deja pasar si el token dice CLIENTE o ADMINISTRADOR
-    @PreAuthorize("hasRole('CLIENTE')") 
+    // Aquí validamos que sea CLIENTE. (Si en tu MetodoPagoRequest viaja el usuarioId, 
+    // también podrías agregarle la validación aquí, pero usualmente con el GET basta para blindar las consultas).
+    @PreAuthorize("hasRole('CLIENTE') or hasRole('ADMIN')") 
     @PostMapping("/metodos-pago")
     public ResponseEntity<MetodoPagoResponse> agregarMetodoPago(@Valid @RequestBody MetodoPagoRequest request) {
         MetodoPagoResponse response = clienteService.agregarMetodoPago(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // ¡NUEVO! Aquí dejamos que lo vea el CLIENTE dueño, o un ADMINISTRADOR
-    @PreAuthorize("hasRole('CLIENTE') ") 
+    // ¡LA MAGIA OCURRE AQUÍ!
+    // Compara el UUID de la ruta (#usuarioId) con el UUID que guardamos en el filtro (authentication.credentials)
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #usuarioId.toString() == authentication.credentials)") 
     @GetMapping("/usuario/{usuarioId}/metodos-pago")
     public ResponseEntity<List<MetodoPagoResponse>> listarMetodosPagoUsuario(@PathVariable UUID usuarioId) {
         List<MetodoPagoResponse> response = clienteService.listarMetodosPagoUsuario(usuarioId);

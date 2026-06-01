@@ -44,8 +44,11 @@ public class ProveedorController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // Permite al proveedor ver sus empresas asociadas, o al administrador revisarlas
-    @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
+    // =========================================================
+    // ¡LA CERRADURA ANTI-IDOR APLICADA AQUÍ!
+    // Solo deja pasar al ADMIN, o al PROVEEDOR si el ID de la URL coincide con su token
+    // =========================================================
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('PROVEEDOR') and #usuarioId.toString() == authentication.credentials)")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ProveedorResponse>> listarProveedoresPorUsuario(@PathVariable UUID usuarioId) {
         List<ProveedorResponse> response = proveedorService.listarProveedoresPorUsuario(usuarioId);

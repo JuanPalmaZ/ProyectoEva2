@@ -30,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         
         final String authHeader = request.getHeader("Authorization");
         
-        // Si no hay token o no empieza con Bearer, sigue de largo (y Spring lo bloqueará después)
+        // Si no hay token o no empieza con Bearer, sigue de largo
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -44,18 +44,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 
                 if (jwtService.isTokenValid(jwt)) {
-                    // 1. Extraemos los roles del token
+                    // 1. Extraemos los roles y aseguramos que tengan el prefijo ROLE_
                     List<String> roles = jwtService.extraerRoles(jwt);
-                    
-                    // 2. Los convertimos al formato oficial de permisos de Spring Security
                     List<SimpleGrantedAuthority> authorities = roles.stream()
+                            .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                             .map(SimpleGrantedAuthority::new)
                             .toList();
 
-                    // 3. Creamos la autenticación (Sin contraseña, porque el token ya validó la identidad)
+                    // =========================================================
+                    // ¡NUEVO PASO 2! Extraemos el UUID directamente del aire
+                    // =========================================================
+                    String usuarioId = jwtService.extraerUsuarioId(jwt);
+
+                    // 3. Creamos la autenticación. 
+                    // OJO AQUÍ: Ponemos userEmail como "Identidad" y usuarioId como "Credenciales"
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userEmail, null, authorities
+                            userEmail, usuarioId, authorities
                     );
+                    
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     
                     // 4. Registramos al usuario en la memoria temporal del servidor
@@ -63,8 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Si el token está expirado, alterado o es inválido, simplemente atrapamos el error
-            // y no autenticamos. Spring devolverá un 401/403 automáticamente.
+            // Token inválido o expirado, lo bloquea en silencio
         }
         
         filterChain.doFilter(request, response);

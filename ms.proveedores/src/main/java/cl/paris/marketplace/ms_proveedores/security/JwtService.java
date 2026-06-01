@@ -1,6 +1,5 @@
 package cl.paris.marketplace.ms_proveedores.security;
 
-
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -22,15 +21,15 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
+    // 1. EXTRAER EMAIL
     public String extraerUsername(String token) {
         return extraerClaim(token, Claims::getSubject);
     }
 
-    // Novedad: Este método extrae la lista de roles que inyectó el ms-usuarios
+    // 2. EXTRAER ROLES
     @SuppressWarnings("unchecked")
     public List<String> extraerRoles(String token) {
         Claims claims = extraerAllClaims(token);
-        // Cuando Spring serializa roles, lo hace como una lista de mapas [{"authority": "ROLE_..."}]
         List<Map<String, String>> rolesList = claims.get("roles", List.class);
         
         if (rolesList == null) return List.of();
@@ -40,6 +39,22 @@ public class JwtService {
                 .toList();
     }
 
+    // 3. EXTRAER EL UUID (LA CERRADURA) - VERSIÓN A PRUEBA DE BALAS
+    public String extraerUsuarioId(String token) {
+        Claims claims = extraerAllClaims(token);
+        
+        // Lo sacamos como un objeto genérico primero para evitar errores de versión de JJWT
+        Object usuarioIdClaim = claims.get("usuarioId");
+        
+        // Si el token es viejo y no trae la llave, avisamos en vez de explotar feo
+        if (usuarioIdClaim == null) {
+            throw new IllegalArgumentException("¡Alto ahí! El token no contiene un usuarioId. Necesitas hacer Login de nuevo para generar un token actualizado.");
+        }
+        
+        return usuarioIdClaim.toString();
+    }
+
+    // 4. VALIDAR TOKEN (Solo revisa que no esté vencido)
     public boolean isTokenValid(String token) {
         return !isTokenExpired(token);
     }

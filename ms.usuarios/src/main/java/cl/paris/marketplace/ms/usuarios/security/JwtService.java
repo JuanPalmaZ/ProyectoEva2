@@ -16,38 +16,58 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+// Importa tu entidad y tu repositorio
+import cl.paris.marketplace.ms.usuarios.model.Usuario;
+import cl.paris.marketplace.ms.usuarios.repository.UsuarioRepository; 
+
 @Service
 public class JwtService {
 
-    // Extrae la clave secreta y el tiempo de expiración desde tu application.yml
     @Value("${jwt.secret}")
     private String secretKey;
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    // 1. GENERAR TOKEN: Se ejecuta cuando el login es exitoso
+    // Inyectamos el repositorio para ir a buscar el UUID de forma segura
+    private final UsuarioRepository usuarioRepository;
+
+    public JwtService(UsuarioRepository usuarioRepository) {
+        this.usuarioRepository = usuarioRepository;
+    }
+
+    // 1. GENERAR TOKEN
     public String generarToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
         
-        // Aquí le inyectamos los roles al token para que el Front-End sepa qué permisos tiene
+        // Inyectamos los roles al token
         extraClaims.put("roles", userDetails.getAuthorities());
+        
+        // =========================================================
+        // LA SOLUCIÓN AL CLASS CAST EXCEPTION
+        // Buscamos al usuario en la BD usando el email que nos da Spring Security.
+        // Si no lo encuentra, lanza error, pero si lo encuentra, sacamos el UUID seguro.
+        // =========================================================
+        Usuario usuario = usuarioRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado en la BD al generar token"));
+                
+        extraClaims.put("usuarioId", usuario.getId().toString());
         
         return Jwts.builder()
                 .claims(extraClaims)
-                .subject(userDetails.getUsername()) // El email del usuario
+                .subject(userDetails.getUsername()) 
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSignInKey()) // Firmamos con nuestra clave secreta
+                .signWith(getSignInKey()) 
                 .compact();
     }
 
-    // 2. EXTRAER USUARIO: Lee el token y saca el correo de quien lo envió
+    // 2. EXTRAER USUARIO
     public String extraerUsername(String token) {
         return extraerClaim(token, Claims::getSubject);
     }
 
-    // 3. VALIDAR TOKEN: Confirma que el token pertenece al usuario y no ha expirado
+    // 3. VALIDAR TOKEN
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extraerUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
@@ -74,7 +94,6 @@ public class JwtService {
                 .getPayload();
     }
 
-    // Traduce tu clave secreta del YAML a un algoritmo de encriptación HMAC SHA
     private SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);

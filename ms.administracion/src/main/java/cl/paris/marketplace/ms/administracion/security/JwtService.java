@@ -1,5 +1,4 @@
-package cl.paris.marketplace.ms.clientes.security;
-
+package cl.paris.marketplace.ms.administracion.security;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
