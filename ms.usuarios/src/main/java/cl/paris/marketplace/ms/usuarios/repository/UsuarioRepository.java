@@ -1,6 +1,7 @@
 package cl.paris.marketplace.ms.usuarios.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,10 +12,13 @@ import cl.paris.marketplace.ms.usuarios.model.Usuario;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     
-    // 1. Método necesario para registrarUsuario() - Verifica si el correo ya está en la BD
+    // 1. Para registrarUsuario() - Verifica si el correo ya existe
     boolean existsByEmail(String email);
 
-    // 2. Método necesario para buscarUsuarios() - Busca coincidencias ignorando mayúsculas/minúsculas
+    // 2. Para buscarUsuarios() del Administrador - Trae una LISTA de coincidencias parciales
     List<Usuario> findByEmailContainingIgnoreCase(String email);
+
+    // 3. Para el Login de Spring Security (Fase 3) - Trae un ÚNICO usuario exacto (Optional)
+    Optional<Usuario> findByEmail(String email);
     
 }

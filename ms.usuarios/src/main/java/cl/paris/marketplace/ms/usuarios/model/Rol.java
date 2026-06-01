@@ -1,6 +1,5 @@
 package cl.paris.marketplace.ms.usuarios.model;
 
-import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,9 +20,9 @@ import lombok.Setter;
 @Table(name="rol")
 public class Rol {
     @Id
-    @GeneratedValue(strategy= GenerationType.UUID)
+    @GeneratedValue(strategy= GenerationType.IDENTITY)
     @Column(name="id")
-    private UUID id;
+    private Long id;
     @Column(name="nombre_rol", nullable=false,length=20)
     private String nombreRol;
 

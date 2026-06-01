@@ -15,12 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import cl.paris.marketplace.ms.usuarios.dto.PerfilRequest;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilResponse;
-import cl.paris.marketplace.ms.usuarios.dto.RolRequest;
-import cl.paris.marketplace.ms.usuarios.dto.RolResponse;
 import cl.paris.marketplace.ms.usuarios.dto.UsuarioCompletoResponse;
 import cl.paris.marketplace.ms.usuarios.dto.UsuarioRequest;
 import cl.paris.marketplace.ms.usuarios.dto.UsuarioResponse;
-import cl.paris.marketplace.ms.usuarios.service.UsuarioService; 
+import cl.paris.marketplace.ms.usuarios.service.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -37,7 +35,6 @@ public class UsuarioController {
     // ==========================================
     // ENDPOINTS: USUARIOS
     // ==========================================
-    
     @PostMapping
     public ResponseEntity<UsuarioResponse> registrarUsuario(@Valid @RequestBody UsuarioRequest request) {
         UsuarioResponse response = usuarioService.registrarUsuario(request);
@@ -59,7 +56,6 @@ public class UsuarioController {
     // ==========================================
     // ENDPOINTS: PERFILES
     // ==========================================
-    
     @PostMapping("/perfiles")
     public ResponseEntity<PerfilResponse> crearPerfil(@Valid @RequestBody PerfilRequest request) {
         PerfilResponse response = usuarioService.crearPerfil(request);
@@ -73,27 +69,11 @@ public class UsuarioController {
     }
 
     // ==========================================
-    // ENDPOINTS: ROLES
-    // ==========================================
-
-    @PostMapping("/roles")
-    public ResponseEntity<RolResponse> crearRol(@Valid @RequestBody RolRequest request) {
-        RolResponse response = usuarioService.crearRol(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
-
-    @GetMapping("/roles")
-    public ResponseEntity<List<RolResponse>> listarRoles() {
-        return ResponseEntity.ok(usuarioService.listarRoles());
-    }
-
-    // ==========================================
     // ENDPOINTS: VISTA CONSOLIDADA (Usa Feign)
     // ==========================================
     
     @GetMapping("/{id}/completo")
     public ResponseEntity<UsuarioCompletoResponse> obtenerUsuarioCompleto(@PathVariable UUID id) {
-        UsuarioCompletoResponse response = usuarioService.obtenerUsuarioCompleto(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(usuarioService.obtenerUsuarioCompleto(id));
     }
 }

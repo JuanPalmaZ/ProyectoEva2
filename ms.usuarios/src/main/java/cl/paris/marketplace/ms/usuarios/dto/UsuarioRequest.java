@@ -18,5 +18,5 @@ public record UsuarioRequest(
     String password,
 
     @NotNull(message = "Debe asignar un rol al usuario")
-    UUID rolId
+    Long rolId
 ) {}

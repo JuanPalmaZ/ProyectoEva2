@@ -1,24 +1,22 @@
 server:
-  port: 8080 # Puerto principal. Todo el tráfico de Postman o tu frontend entrará por aquí.
+  port: 8080
 
 spring:
   application:
-    name: api-gateway # Nombre con el que el Gateway aparecerá en Eureka
+    name: api-gateway
   cloud:
     gateway:
       discovery:
         locator:
-          enabled: false # Apagado para usar enrutamiento manual (estándar de producción)
+          enabled: false
       
-      # ==========================================
-      # REGLAS DE ENRUTAMIENTO (Rutas hacia tus microservicios)
-      # ==========================================
       routes:
-        # 1. Todo lo de identidad y perfiles se va a MS-USUARIOS
+        # 1. Todo lo de identidad, perfiles, roles y login se va a MS-USUARIOS
         - id: usuarios-route
           uri: lb://MS-USUARIOS
           predicates:
-            - Path=/api/usuarios/**
+            # CORREGIDO: Sin espacios después de las comas
+            - Path=/api/usuarios/**,/api/roles/**,/api/auth/**
 
         # 2. Todo lo de tarjetas y finanzas se va a MS-CLIENTES
         - id: clientes-route
@@ -26,9 +24,9 @@ spring:
           predicates:
             - Path=/api/clientes/**
 
-        # 3. NUEVO: Todo lo de proveedores y documentos se va a MS-PROVEEDORES
+        # 3. Todo lo de proveedores y documentos se va a MS-PROVEEDORES
         - id: proveedores-route
-          uri: lb://MS-PROVEEDORES # 'lb://' le pide la IP a Eureka basándose en el nombre
+          uri: lb://MS-PROVEEDORES
           predicates:
             - Path=/api/proveedores/**
 
@@ -37,8 +35,8 @@ spring:
 # ==========================================
 eureka:
   client:
-    register-with-eureka: true # El Gateway también se registra en el directorio
-    fetch-registry: true       # Descarga el mapa de dónde están los demás servicios
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka/
   instance:
