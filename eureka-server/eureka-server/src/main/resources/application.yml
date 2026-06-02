@@ -8,4 +8,4 @@ eureka:
     register-with-eureka: false # Evita que el servidor intente registrarse a sí mismo
     fetch-registry: false       # Evita que intente descargar un mapa local (él es el mapa original)
     service-url:
-      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/  
