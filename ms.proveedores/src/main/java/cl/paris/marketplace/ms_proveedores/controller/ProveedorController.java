@@ -5,7 +5,8 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // Importación obligatoria para los candados
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication; // <-- Importación agregada
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,12 +23,11 @@ import cl.paris.marketplace.ms_proveedores.service.ProveedorService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/proveedores") // Ruta base para este microservicio
+@RequestMapping("/api/proveedores")
 public class ProveedorController {
 
     private final ProveedorService proveedorService;
 
-    // Inyección de dependencias por constructor
     public ProveedorController(ProveedorService proveedorService) {
         this.proveedorService = proveedorService;
     }
@@ -36,34 +36,43 @@ public class ProveedorController {
     // ENDPOINTS: PROVEEDORES
     // ==========================================
 
-    // Un proveedor puede registrar su empresa, o un admin darlo de alta
     @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ProveedorResponse> crearProveedor(@Valid @RequestBody ProveedorRequest request) {
-        ProveedorResponse response = proveedorService.crearProveedor(request);
+    public ResponseEntity<ProveedorResponse> crearProveedor(
+            @Valid @RequestBody ProveedorRequest request,
+            Authentication authentication // <-- Interceptamos token
+    ) {
+        UUID usuarioId = UUID.fromString(authentication.getCredentials().toString());
+        ProveedorResponse response = proveedorService.crearProveedor(request, usuarioId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // =========================================================
-    // ¡LA CERRADURA ANTI-IDOR APLICADA AQUÍ!
-    // Solo deja pasar al ADMIN, o al PROVEEDOR si el ID de la URL coincide con su token
-    // =========================================================
     @PreAuthorize("hasRole('ADMIN') or (hasRole('PROVEEDOR') and #usuarioId.toString() == authentication.credentials)")
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<ProveedorResponse>> listarProveedoresPorUsuario(@PathVariable UUID usuarioId) {
         List<ProveedorResponse> response = proveedorService.listarProveedoresPorUsuario(usuarioId);
         return ResponseEntity.ok(response);
     }
+    
+    // --> RUTA NUEVA OCULTA: Exclusiva para que ms-productos la consulte vía Feign
+    @GetMapping("/interno/usuario/{usuarioId}/id")
+    public ResponseEntity<UUID> obtenerIdProveedorInterno(@PathVariable UUID usuarioId) {
+        UUID proveedorId = proveedorService.obtenerIdProveedorPorUsuarioId(usuarioId);
+        return ResponseEntity.ok(proveedorId);
+    }
 
     // ==========================================
     // ENDPOINTS: DOCUMENTOS
     // ==========================================
 
-    // Solo el proveedor puede subir sus documentos legales de validación, o el admin en su defecto
     @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @PostMapping("/documentos")
-    public ResponseEntity<DocumentoResponse> agregarDocumento(@Valid @RequestBody DocumentoRequest request) {
-        DocumentoResponse response = proveedorService.agregarDocumento(request);
+    public ResponseEntity<DocumentoResponse> agregarDocumento(
+            @Valid @RequestBody DocumentoRequest request,
+            Authentication authentication // <-- Interceptamos token
+    ) {
+        UUID usuarioId = UUID.fromString(authentication.getCredentials().toString());
+        DocumentoResponse response = proveedorService.agregarDocumento(request, usuarioId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -71,7 +80,6 @@ public class ProveedorController {
     // ENDPOINTS: VISTA CONSOLIDADA
     // ==========================================
 
-    // Trae el perfil del proveedor con todos sus documentos tributarios/legales
     @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @GetMapping("/{id}/completo")
     public ResponseEntity<ProveedorCompletoResponse> obtenerProveedorCompleto(@PathVariable UUID id) {

@@ -5,7 +5,8 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication; // <-- Importante
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,17 +33,22 @@ public class ClienteController {
     // ENDPOINTS: MÉTODOS DE PAGO
     // ==========================================
     
-    // Aquí validamos que sea CLIENTE. (Si en tu MetodoPagoRequest viaja el usuarioId, 
-    // también podrías agregarle la validación aquí, pero usualmente con el GET basta para blindar las consultas).
     @PreAuthorize("hasRole('CLIENTE') or hasRole('ADMIN')") 
     @PostMapping("/metodos-pago")
-    public ResponseEntity<MetodoPagoResponse> agregarMetodoPago(@Valid @RequestBody MetodoPagoRequest request) {
-        MetodoPagoResponse response = clienteService.agregarMetodoPago(request);
+    public ResponseEntity<MetodoPagoResponse> agregarMetodoPago(
+            @Valid @RequestBody MetodoPagoRequest request,
+            Authentication authentication // <-- Interceptamos la seguridad aquí
+    ) {
+        // Extraemos el ID del token (según tu filtro, está guardado en credentials)
+        UUID usuarioId = UUID.fromString(authentication.getCredentials().toString());
+        
+        // Pasamos el request limpio y el ID recién extraído al Service
+        MetodoPagoResponse response = clienteService.agregarMetodoPago(request, usuarioId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // ¡LA MAGIA OCURRE AQUÍ!
-    // Compara el UUID de la ruta (#usuarioId) con el UUID que guardamos en el filtro (authentication.credentials)
+    // Este lo dejamos tal cual porque tu @PreAuthorize ya hace el trabajo perfecto 
+    // de comparar el ID de la URL con el del Token.
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #usuarioId.toString() == authentication.credentials)") 
     @GetMapping("/usuario/{usuarioId}/metodos-pago")
     public ResponseEntity<List<MetodoPagoResponse>> listarMetodosPagoUsuario(@PathVariable UUID usuarioId) {

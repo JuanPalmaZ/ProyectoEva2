@@ -1,6 +1,7 @@
 package cl.paris.marketplace.ms.venta.mapper;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import cl.paris.marketplace.ms.venta.dto.DetalleVentaRequest;
@@ -12,16 +13,15 @@ import cl.paris.marketplace.ms.venta.model.Venta;
 
 public interface VentaMapper {
 
-    static Venta toModel(VentaRequest request) {
+    // Ahora recibe el clienteId extraído del token
+    static Venta toModel(VentaRequest request, UUID clienteId) {
 
         Venta venta = Venta.builder()
-                .clienteId(request.getClienteId())
+                .clienteId(clienteId) // Se inyecta el ID seguro
                 .build();
 
         if (request.getItems() != null) {
-
             for (DetalleVentaRequest item : request.getItems()) {
-
                 DetalleVenta detalle = DetalleVenta.builder()
                         .productoId(item.getProductoId())
                         .proveedorId(item.getProveedorId())

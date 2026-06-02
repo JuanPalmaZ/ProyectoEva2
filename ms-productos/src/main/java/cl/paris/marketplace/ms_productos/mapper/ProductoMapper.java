@@ -1,5 +1,7 @@
 package cl.paris.marketplace.ms_productos.mapper;
 
+import java.util.UUID; // Importante agregar esto
+
 import org.springframework.stereotype.Component;
 
 import cl.paris.marketplace.ms_productos.dto.CategoriaResponse;
@@ -15,7 +17,8 @@ public class ProductoMapper {
     // MAPPERS PARA PRODUCTO
     // ==========================================
 
-    public Producto toProductoEntity(ProductoRequest request, Categoria categoria) {
+    // Ahora recibe el proveedorId inyectado desde el Service
+    public Producto toProductoEntity(ProductoRequest request, Categoria categoria, UUID proveedorId) {
         if (request == null) return null;
         
         Producto producto = new Producto();
@@ -24,7 +27,7 @@ public class ProductoMapper {
         producto.setDescripcion(request.descripcion());
         producto.setPrecio(request.precio());
         producto.setStock(request.stock());
-        producto.setProveedorId(request.proveedorId());
+        producto.setProveedorId(proveedorId); // Se asigna el ID seguro
         producto.setCategoria(categoria);
         
         return producto;
@@ -33,7 +36,6 @@ public class ProductoMapper {
     public ProductoResponse toProductoResponse(Producto producto) {
         if (producto == null) return null;
 
-        // Mapeamos los datos usando la estructura plana exacta de tu Record ProductoResponse
         return new ProductoResponse(
                 producto.getId(),
                 producto.getSku(),
@@ -42,9 +44,9 @@ public class ProductoMapper {
                 producto.getPrecio(),
                 producto.getStock(),
                 producto.getProveedorId(),
-                producto.getCategoria().getId(),          // categoriaId
-                producto.getCategoria().getNombre(),      // categoriaNombre
-                producto.getCategoria().getDescripcion(), // categoriaDescripcion
+                producto.getCategoria().getId(),          
+                producto.getCategoria().getNombre(),      
+                producto.getCategoria().getDescripcion(), 
                 producto.getActivo(),
                 producto.getFechaCreacion()
         );

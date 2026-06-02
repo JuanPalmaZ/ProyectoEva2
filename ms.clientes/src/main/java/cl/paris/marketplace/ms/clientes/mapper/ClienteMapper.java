@@ -19,7 +19,7 @@ public class ClienteMapper {
         MetodoPago metodoPago = new MetodoPago();
         
         // Usamos la Soft Foreign Key (el UUID) en lugar del objeto completo
-        metodoPago.setUsuarioId(request.usuarioId()); 
+    
         metodoPago.setTokenTarjeta(request.tokenTarjeta());
         metodoPago.setTipo(request.tipo());
         

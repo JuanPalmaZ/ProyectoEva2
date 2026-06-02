@@ -7,13 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(
-    name = "ms-proveedores", // Recuerda que este nombre debe coincidir con el spring.application.name de tu microservicio de proveedores
-    configuration = FeignClientConfig.class // Engancha tu interceptor local para pasar el Bearer Token
+        name = "ms-proveedores", 
+        configuration = FeignClientConfig.class 
 )
 public interface ProveedorClient {
 
-    // Retorna Object para que Jackson acepte cualquier JSON que devuelva el ms-proveedores 
-    // sin que te tire errores por campos o propiedades que no tengas mapeadas aquí.
-    @GetMapping("/api/proveedores/{id}/completo")
-    Object obtenerProveedorSimplificado(@PathVariable("id") UUID id);
+    // Llama a la ruta interna que creamos en ms-proveedores
+    @GetMapping("/api/proveedores/interno/usuario/{usuarioId}/id")
+    UUID obtenerIdProveedorInterno(@PathVariable("usuarioId") UUID usuarioId);
 }

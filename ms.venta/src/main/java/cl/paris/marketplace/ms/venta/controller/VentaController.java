@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication; // <-- Importación obligatoria
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,10 +39,14 @@ public class VentaController {
     @PreAuthorize("hasRole('CLIENTE')")
     @PostMapping
     public ResponseEntity<VentaResponse> registrarVenta(
-            @Valid @RequestBody VentaRequest request) {
-
-        VentaResponse response =
-                ventaService.registrarVenta(request);
+            @Valid @RequestBody VentaRequest request,
+            Authentication authentication // <-- Interceptamos el token
+    ) {
+        // Extraemos el ID del cliente
+        UUID clienteId = UUID.fromString(authentication.getCredentials().toString());
+        
+        // Se lo pasamos al Service (tendrás que actualizar la firma en VentaService)
+        VentaResponse response = ventaService.registrarVenta(request, clienteId);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -65,7 +70,8 @@ public class VentaController {
     // HISTORIAL CLIENTE
     // ==========================================
 
-    @PreAuthorize("hasAnyRole('ADMIN','CLIENTE')")
+    // CERRADURA ANTI-IDOR APLICADA AQUÍ
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #clienteId.toString() == authentication.credentials)")
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<List<VentaResponse>> buscarPorCliente(
             @PathVariable UUID clienteId) {

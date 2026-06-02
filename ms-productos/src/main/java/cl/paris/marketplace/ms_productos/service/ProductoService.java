@@ -7,9 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import feign.FeignException; // Importación obligatoria para capturar el error si el ID no existe
-
-import cl.paris.marketplace.ms_productos.client.ProveedorClient;
+import cl.paris.marketplace.ms_productos.client.ProveedorClient; 
 import cl.paris.marketplace.ms_productos.dto.CategoriaRequest;
 import cl.paris.marketplace.ms_productos.dto.CategoriaResponse;
 import cl.paris.marketplace.ms_productos.dto.ProductoRequest;
@@ -19,6 +17,7 @@ import cl.paris.marketplace.ms_productos.model.Categoria;
 import cl.paris.marketplace.ms_productos.model.Producto;
 import cl.paris.marketplace.ms_productos.repository.CategoriaRepository;
 import cl.paris.marketplace.ms_productos.repository.ProductoRepository;
+import feign.FeignException;
 
 @Service
 public class ProductoService {
@@ -28,7 +27,6 @@ public class ProductoService {
     private final ProductoMapper productoMapper;
     private final ProveedorClient proveedorClient;
 
-    // Inyección por constructor actualizada con el cliente Feign
     public ProductoService(ProductoRepository productoRepository,
                            CategoriaRepository categoriaRepository,
                            ProductoMapper productoMapper,
@@ -42,67 +40,58 @@ public class ProductoService {
     // ==========================================
     // LÓGICA DE NEGOCIO: PRODUCTOS
     // ==========================================
+    
     @Transactional
-    public ProductoResponse registrarProducto(ProductoRequest request) {
-        // 1. Validación de negocio: Evitar duplicados por SKU
+    public ProductoResponse registrarProducto(ProductoRequest request, UUID usuarioId) {
         if (productoRepository.findBySku(request.sku()).isPresent()) {
             throw new RuntimeException("El SKU '" + request.sku() + "' ya se encuentra registrado en el Marketplace.");
         }
 
-        // 2. Validar únicamente la existencia del ID del proveedor vía Feign
+        // 2. PUENTE INTERNO: Obtener el proveedorId real usando Feign Client
+        UUID proveedorId;
         try {
-            proveedorClient.obtenerProveedorSimplificado(request.proveedorId());
-        } catch (FeignException.NotFound e) {
-            throw new RuntimeException("Error de validación: El ID de proveedor " + request.proveedorId() + " no existe.");
-        } catch (Exception e) {
-            throw new RuntimeException("Error de comunicación con el servicio de proveedores: " + e.getMessage());
+            proveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
+        } catch (FeignException e) {
+            throw new RuntimeException("Error: No se encontró un perfil de proveedor asociado a este usuario.");
         }
 
-        // 3. Buscar la Categoría en la base de datos
         Categoria categoria = categoriaRepository.findById(request.categoriaId())
                 .orElseThrow(() -> new RuntimeException("La Categoría especificada no existe."));
 
-        // 4. Transformar Record a Entidad usando el Mapper
-        Producto producto = productoMapper.toProductoEntity(request, categoria);
+        // Pasamos el proveedorId al Mapper
+        Producto producto = productoMapper.toProductoEntity(request, categoria, proveedorId);
 
-        // 5. Guardar en la Base de Datos y responder con el Record plano seguro
         Producto productoGuardado = productoRepository.save(producto);
         return productoMapper.toProductoResponse(productoGuardado);
     }
 
-    // Método necesario para soportar el PUT del controlador
     @Transactional
-    public ProductoResponse modificarProducto(UUID id, ProductoRequest request) {
-        // 1. Buscar el producto existente
+    public ProductoResponse modificarProducto(UUID id, ProductoRequest request, UUID usuarioId) {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado para modificar."));
 
-        // 2. Validar el SKU si es que se está intentando cambiar
         if (!producto.getSku().equals(request.sku()) && productoRepository.findBySku(request.sku()).isPresent()) {
             throw new RuntimeException("El SKU '" + request.sku() + "' ya se encuentra registrado por otro artículo.");
         }
 
-        // 3. Validar la existencia del ID de proveedor destino
+        // PUENTE INTERNO: Validar quién está modificando
+        UUID proveedorId;
         try {
-            proveedorClient.obtenerProveedorSimplificado(request.proveedorId());
-        } catch (FeignException.NotFound e) {
-            throw new RuntimeException("Error: El ID de proveedor " + request.proveedorId() + " no existe.");
-        } catch (Exception e) {
-            throw new RuntimeException("Error de comunicación interservicio: " + e.getMessage());
+            proveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
+        } catch (FeignException e) {
+            throw new RuntimeException("Error: No se encontró un perfil de proveedor asociado a este usuario.");
         }
 
-        // 4. Buscar la Categoría elegida
         Categoria categoria = categoriaRepository.findById(request.categoriaId())
                 .orElseThrow(() -> new RuntimeException("La Categoría especificada no existe."));
 
-        // 5. Actualizar los datos del producto
         producto.setSku(request.sku());
         producto.setNombre(request.nombre());
         producto.setDescripcion(request.descripcion());
         producto.setPrecio(request.precio());
         producto.setStock(request.stock());
         producto.setCategoria(categoria);
-        producto.setProveedorId(request.proveedorId());
+        producto.setProveedorId(proveedorId); // Se re-asigna para asegurar consistencia
 
         Producto productoActualizado = productoRepository.save(producto);
         return productoMapper.toProductoResponse(productoActualizado);
@@ -123,7 +112,15 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductoResponse> listarProductosPorProveedor(UUID proveedorId) {
+    public List<ProductoResponse> listarProductosPorProveedor(UUID usuarioId) {
+        // Para listar sus productos, primero sacamos su proveedorId
+        UUID proveedorId;
+        try {
+            proveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
+        } catch (FeignException e) {
+            throw new RuntimeException("Error: No se encontró un perfil de proveedor asociado.");
+        }
+        
         return productoRepository.findByProveedorId(proveedorId).stream()
                 .map(productoMapper::toProductoResponse)
                 .collect(Collectors.toList());
@@ -158,7 +155,6 @@ public class ProductoService {
     // ==========================================
     @Transactional
     public CategoriaResponse crearCategoria(CategoriaRequest request) {
-        // Validar si la categoría ya existe por nombre para no tener duplicados
         if (categoriaRepository.findByNombre(request.nombre()).isPresent()) {
             throw new RuntimeException("La categoría ya existe en el sistema.");
         }

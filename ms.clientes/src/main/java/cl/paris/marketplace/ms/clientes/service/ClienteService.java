@@ -18,7 +18,6 @@ public class ClienteService {
     private final MetodoPagoRepository metodoPagoRepository;
     private final ClienteMapper clienteMapper;
 
-    // Inyección por constructor limpia y directa
     public ClienteService(MetodoPagoRepository metodoPagoRepository, ClienteMapper clienteMapper) {
         this.metodoPagoRepository = metodoPagoRepository;
         this.clienteMapper = clienteMapper;
@@ -29,13 +28,13 @@ public class ClienteService {
     // ==========================================
     
     @Transactional
-    public MetodoPagoResponse agregarMetodoPago(MetodoPagoRequest request) {
+    public MetodoPagoResponse agregarMetodoPago(MetodoPagoRequest request, UUID usuarioId) { // <-- 1. Recibimos el ID del token
         
-        // Transformar DTO a Entidad usando tu nuevo Mapper limpio.
-        // Nota Arquitectónica: Como el Usuario vive en otro microservicio, aquí ya no 
-        // hacemos un "usuarioRepository.findById()". Simplemente guardamos el UUID 
-        // asumiendo que el Frontend o el Gateway ya validaron que el usuario existe.
+        // Transformar DTO a Entidad
         MetodoPago metodoPago = clienteMapper.toMetodoPagoEntity(request);
+        
+        // <-- 2. ¡EL CAMBIO CLAVE! Le asignamos el ID seguro a la entidad
+        metodoPago.setUsuarioId(usuarioId); 
         
         // Guardar en la base de datos
         MetodoPago metodoPagoGuardado = metodoPagoRepository.save(metodoPago);
@@ -46,9 +45,8 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public List<MetodoPagoResponse> listarMetodosPagoUsuario(UUID usuarioId) {
-        // Busca todas las tarjetas de un usuario usando la Soft Foreign Key
         return metodoPagoRepository.findByUsuarioId(usuarioId).stream()
                 .map(clienteMapper::toMetodoPagoResponse)
-                .toList(); // Usando toList() nativo de Java moderno
+                .toList(); 
     }
 }

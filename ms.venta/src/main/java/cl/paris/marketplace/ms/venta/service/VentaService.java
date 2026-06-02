@@ -38,9 +38,10 @@ public class VentaService {
     // ==========================================
 
     @Transactional
-    public VentaResponse registrarVenta(VentaRequest request) {
+    public VentaResponse registrarVenta(VentaRequest request, UUID clienteId) { // <-- Se inyecta el ID seguro
 
-        Venta nuevaVenta = VentaMapper.toModel(request);
+        // Se pasa el clienteId al Mapper
+        Venta nuevaVenta = VentaMapper.toModel(request, clienteId); 
 
         BigDecimal totalCompra = BigDecimal.ZERO;
 

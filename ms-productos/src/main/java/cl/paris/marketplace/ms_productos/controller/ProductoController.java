@@ -6,12 +6,13 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication; // <-- Importación agregada
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping; // Importación para modificar
+import org.springframework.web.bind.annotation.PutMapping; 
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,21 +39,28 @@ public class ProductoController {
     // CRUD: PRODUCTOS
     // ==========================================
 
-    // 1. AGREGAR PRODUCTO
+    // 1. AGREGAR PRODUCTO (Extrae el ID del token)
     @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ProductoResponse> registrarProducto(@Valid @RequestBody ProductoRequest request) {
-        ProductoResponse response = productoService.registrarProducto(request);
+    public ResponseEntity<ProductoResponse> registrarProducto(
+            @Valid @RequestBody ProductoRequest request,
+            Authentication authentication // <-- Interceptamos
+    ) {
+        UUID usuarioId = UUID.fromString(authentication.getCredentials().toString());
+        ProductoResponse response = productoService.registrarProducto(request, usuarioId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // 2. MODIFICAR PRODUCTO (Actualiza nombre, descripción, precio, etc.)
+    // 2. MODIFICAR PRODUCTO (Extrae el ID del token)
     @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponse> modificarProducto(
             @PathVariable UUID id,
-            @Valid @RequestBody ProductoRequest request) {
-        ProductoResponse response = productoService.modificarProducto(id, request);
+            @Valid @RequestBody ProductoRequest request,
+            Authentication authentication // <-- Interceptamos
+    ) {
+        UUID usuarioId = UUID.fromString(authentication.getCredentials().toString());
+        ProductoResponse response = productoService.modificarProducto(id, request, usuarioId);
         return ResponseEntity.ok(response);
     }
 
@@ -64,8 +72,7 @@ public class ProductoController {
         return ResponseEntity.noContent().build();
     }
 
-    // 4. ACTUALIZAR STOCK (Uso manual del Proveedor/Admin, o automático por
-    // ms-ventas al comprar)
+    // 4. ACTUALIZAR STOCK 
     @PreAuthorize("hasAnyRole('PROVEEDOR', 'ADMIN', 'CLIENTE')")
     @PatchMapping("/{id}/stock")
     public ResponseEntity<ProductoResponse> actualizarStock(
@@ -93,10 +100,11 @@ public class ProductoController {
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('PROVEEDOR') or hasRole('ADMIN')")
-    @GetMapping("/proveedor/{proveedorId}")
-    public ResponseEntity<List<ProductoResponse>> listarProductosPorProveedor(@PathVariable UUID proveedorId) {
-        List<ProductoResponse> response = productoService.listarProductosPorProveedor(proveedorId);
+    // CERRADURA ANTI-IDOR APLICADA AQUÍ: Busca por el usuarioId para sacar su catálogo de productos
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('PROVEEDOR') and #usuarioId.toString() == authentication.credentials)")
+    @GetMapping("/proveedor/usuario/{usuarioId}")
+    public ResponseEntity<List<ProductoResponse>> listarProductosPorProveedor(@PathVariable UUID usuarioId) {
+        List<ProductoResponse> response = productoService.listarProductosPorProveedor(usuarioId);
         return ResponseEntity.ok(response);
     }
 
