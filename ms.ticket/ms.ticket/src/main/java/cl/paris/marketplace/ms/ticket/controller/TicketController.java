@@ -3,6 +3,7 @@ package cl.paris.marketplace.ms.ticket.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import cl.paris.marketplace.ms.ticket.dto.TicketRequest;
@@ -30,9 +31,35 @@ public class TicketController {
     // ==========================================
     @PostMapping
     @PreAuthorize("hasRole('CLIENTE')") // Solo los clientes de Paris.cl inician reclamos
-    public ResponseEntity<TicketResponse> abrirTicket(@Valid @RequestBody TicketRequest request) {
-        TicketResponse response = ticketService.abrirTicket(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED); // Retorna 201 Created
+    public ResponseEntity<?> abrirTicket(
+            @Valid @RequestBody TicketRequest request,
+            Authentication authentication
+    ) {
+        try {
+            // Escudo Anti-Null: Revisamos si Spring borró la credencial
+            if (authentication.getCredentials() == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error Crítico: El usuarioId no se encontró en el token.");
+            }
+
+            String credencialesStr = authentication.getCredentials().toString();
+            UUID clienteId;
+            
+            // Escudo Anti-Formato: Revisamos si realmente es un UUID
+            try {
+                clienteId = UUID.fromString(credencialesStr);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error de Formato: El Token fue leído, pero el ID adentro no es un UUID válido.");
+            }
+            
+            TicketResponse response = ticketService.abrirTicket(request, clienteId);
+            return new ResponseEntity<>(response, HttpStatus.CREATED); // Retorna 201 Created
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error procesando el ticket: " + e.getMessage());
+        }
     }
 
     // ==========================================
@@ -55,23 +82,20 @@ public class TicketController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<TicketResponse>> listarTodos() {
-        // CORRECCIÓN: Llama al método exacto del Service para evitar el error 'undefined'
         return ResponseEntity.ok(ticketService.listarTodosLosTickets());
     }
 
-    // Bandeja personal para que el Cliente revise sus disputas activas
+    // Bandeja personal para que el Cliente revise sus disputas activas (Candado Anti-IDOR)
     @GetMapping("/cliente/{clienteId}")
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #clienteId.toString() == authentication.credentials)")
     public ResponseEntity<List<TicketResponse>> listarPorCliente(@PathVariable UUID clienteId) {
-        // CORRECCIÓN: Enlaza directo con obtenerTicketsPorCliente del Service
         return ResponseEntity.ok(ticketService.obtenerTicketsPorCliente(clienteId));
     }
 
-    // Bandeja de entrada para que el Vendedor gestione los reclamos que le abrieron
+    // Bandeja de entrada para que el Vendedor gestione los reclamos que le abrieron (Candado Anti-IDOR)
     @GetMapping("/vendedor/{vendedorId}")
-    @PreAuthorize("hasAnyRole('PROVEEDOR', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('PROVEEDOR') and #vendedorId.toString() == authentication.credentials)")
     public ResponseEntity<List<TicketResponse>> listarPorVendedor(@PathVariable UUID vendedorId) {
-        // CORRECCIÓN: Enlaza directo con obtenerTicketsPorVendedor del Service
         return ResponseEntity.ok(ticketService.obtenerTicketsPorVendedor(vendedorId));
     }
 }

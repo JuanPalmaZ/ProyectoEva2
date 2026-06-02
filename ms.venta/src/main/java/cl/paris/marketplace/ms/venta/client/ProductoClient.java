@@ -6,6 +6,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import cl.paris.marketplace.ms.venta.dto.ProductoResponse;
@@ -20,7 +21,7 @@ public interface ProductoClient {
     ProductoResponse obtenerProductoPorId(
             @PathVariable("id") UUID id);
 
-    @PatchMapping("/api/productos/{id}/stock")
+    @PutMapping("/api/productos/{id}/stock")
     ProductoResponse actualizarStock(
             @PathVariable("id") UUID id,
             @RequestParam("cantidad") Integer cantidad);

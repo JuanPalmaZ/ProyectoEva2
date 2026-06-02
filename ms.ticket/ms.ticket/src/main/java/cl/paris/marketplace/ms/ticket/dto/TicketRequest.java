@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public record TicketRequest(
     @NotNull(message = "El ID del pedido es obligatorio") UUID pedidoId,
-    @NotNull(message = "El ID del cliente es obligatorio") UUID clienteId,
     @NotNull(message = "El ID del vendedor es obligatorio") UUID vendedorId,
     
     @NotBlank(message = "El asunto de la disputa no puede estar vacío")

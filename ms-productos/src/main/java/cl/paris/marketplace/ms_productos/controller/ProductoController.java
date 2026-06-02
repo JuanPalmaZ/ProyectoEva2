@@ -74,7 +74,7 @@ public class ProductoController {
 
     // 4. ACTUALIZAR STOCK 
     @PreAuthorize("hasAnyRole('PROVEEDOR', 'ADMIN', 'CLIENTE')")
-    @PatchMapping("/{id}/stock")
+    @PutMapping("/{id}/stock")
     public ResponseEntity<ProductoResponse> actualizarStock(
             @PathVariable UUID id,
             @RequestParam Integer cantidad) {

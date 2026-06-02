@@ -1,5 +1,6 @@
 package cl.paris.marketplace.ms.ticket.mapper;
 
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 import cl.paris.marketplace.ms.ticket.dto.TicketRequest;
 import cl.paris.marketplace.ms.ticket.dto.TicketResponse;
@@ -9,12 +10,12 @@ import cl.paris.marketplace.ms.ticket.model.Ticket;
 public class TicketMapper {
 
     // Transforma el Request enviado por el cliente para abrir un ticket a la entidad JPA
-    public Ticket toEntity(TicketRequest request) {
+    public Ticket toEntity(TicketRequest request, UUID clienteIdFidedigno) {
         if (request == null) return null; // Validación estricta idéntica a tu plantilla de mappers
 
         Ticket ticket = new Ticket();
         ticket.setPedidoId(request.pedidoId());
-        ticket.setClienteId(request.clienteId());
+        ticket.setClienteId(clienteIdFidedigno); // ID seguro proveniente del Token
         ticket.setVendedorId(request.vendedorId()); // Vinculación obligatoria exigida para disputas
         ticket.setAsunto(request.asunto());
         ticket.setMensajeInicial(request.mensajeInicial());

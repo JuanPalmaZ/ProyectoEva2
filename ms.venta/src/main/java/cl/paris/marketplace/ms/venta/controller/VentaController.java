@@ -38,19 +38,37 @@ public class VentaController {
 
     @PreAuthorize("hasRole('CLIENTE')")
     @PostMapping
-    public ResponseEntity<VentaResponse> registrarVenta(
+    public ResponseEntity<?> registrarVenta(
             @Valid @RequestBody VentaRequest request,
-            Authentication authentication // <-- Interceptamos el token
+            Authentication authentication 
     ) {
-        // Extraemos el ID del cliente
-        UUID clienteId = UUID.fromString(authentication.getCredentials().toString());
-        
-        // Se lo pasamos al Service (tendrás que actualizar la firma en VentaService)
-        VentaResponse response = ventaService.registrarVenta(request, clienteId);
+        try {
+            // 1. Escudo Anti-Null: Revisamos si Spring borró la credencial
+            if (authentication.getCredentials() == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error Crítico: El usuarioId llegó como 'null'. Revisa si el Token realmente trae el claim 'usuarioId'.");
+            }
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+            String credencialesStr = authentication.getCredentials().toString();
+            UUID clienteId;
+            
+            // 2. Escudo Anti-Formato: Revisamos si realmente es un UUID
+            try {
+                clienteId = UUID.fromString(credencialesStr);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error de Formato: El Token fue leído, pero el ID adentro no es un UUID válido. Valor recibido: '" + credencialesStr + "'");
+            }
+            
+            // 3. Ejecución normal si todo está perfecto
+            VentaResponse response = ventaService.registrarVenta(request, clienteId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception e) {
+            // 4. Si explota por falta de stock o problemas de Feign
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error procesando la venta en el Service: " + e.getMessage());
+        }
     }
 
     // ==========================================

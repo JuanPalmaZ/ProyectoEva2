@@ -34,6 +34,21 @@ spring:
           uri: lb://MS-PRODUCTOS  # <-- OJO: Debe ser IGUAL al spring.application.name de tu ms_productos
           predicates:
             - Path=/api/productos/**
+          
+        - id: ventas-route
+          uri: lb://MS-VENTA  # <-- Asegúrate de que tu ms_ventas se llame exactamente así en su application.yml
+          predicates:
+            - Path=/api/ventas/**
+            # 6. Todo lo de reclamos y disputas se va a MS-TICKET
+        - id: tickets-route
+          uri: lb://MS-TICKET  # <-- Revisa que coincida con el nombre en el yml de tickets
+          predicates:
+            - Path=/api/tickets/**
+        # 7. Todo lo de correos y alertas se va a MS-NOTIFICACION
+        - id: notificacion-route
+          uri: lb://MS-NOTIFICACION
+          predicates:
+            - Path=/api/notificaciones/**
 
 # ==========================================
 # CONFIGURACIÓN DE EUREKA
