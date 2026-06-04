@@ -71,6 +71,7 @@ public class UsuarioController {
     // ENDPOINTS: PERFILES
     // ==========================================
     @PostMapping("/perfiles")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PerfilResponse> crearPerfil(
             @Valid @RequestBody PerfilRequest request,
             Authentication authentication) {
