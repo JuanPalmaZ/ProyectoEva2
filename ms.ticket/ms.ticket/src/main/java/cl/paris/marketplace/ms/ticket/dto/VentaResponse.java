@@ -1,8 +1,14 @@
 package cl.paris.marketplace.ms.ticket.dto;
 
+import java.util.List;
 import java.util.UUID;
 
-// DTO minimalista: Si llega a leer el ID, significa que la venta existe en ms.ventas
+// DTO enriquecido: Ahora leemos los detalles de la boleta para sacar el ID del vendedor
 public record VentaResponse(
-    UUID id
-) {}
+        UUID idVenta,
+        List<DetalleVentaDTO> detalles
+) {
+    public record DetalleVentaDTO(
+            UUID proveedorId
+    ) {}
+}

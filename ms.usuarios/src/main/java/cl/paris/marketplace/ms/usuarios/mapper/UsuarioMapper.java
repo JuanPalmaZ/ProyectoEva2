@@ -12,17 +12,15 @@ import cl.paris.marketplace.ms.usuarios.model.Usuario;
 
 @Component
 public class UsuarioMapper {
-    
-    // ==========================================
-    // MAPPERS PARA USUARIO
-    // ==========================================
 
+    // ==========================================
+    // MAPEO DE USUARIOS
+    // ==========================================
     public Usuario toUsuarioEntity(UsuarioRequest request, Rol rol) {
         Usuario usuario = new Usuario();
-        // Nota: Accedemos a los datos del record usando request.email(), no getEmail()
         usuario.setEmail(request.email());
-        usuario.setPasswordHash(request.password());
-        usuario.setRol(rol); // El Service buscará este rol en la BD y se lo pasará al mapper
+        usuario.setRol(rol);
+        usuario.setBaneado(false); 
         return usuario;
     }
 
@@ -31,14 +29,14 @@ public class UsuarioMapper {
                 usuario.getId(),
                 usuario.getEmail(),
                 usuario.getRol().getNombreRol(),
-                usuario.getFechaRegistro()
+                usuario.getBaneado(), 
+                usuario.getFechaIngreso() // Devolvemos la fecha original al JSON
         );
     }
 
     // ==========================================
-    // MAPPERS PARA PERFIL
+    // MAPEO DE PERFILES
     // ==========================================
-
     public Perfil toPerfilEntity(PerfilRequest request, Usuario usuario) {
         Perfil perfil = new Perfil();
         perfil.setUsuario(usuario);
@@ -60,6 +58,4 @@ public class UsuarioMapper {
                 perfil.getTelefono()
         );
     }
-    
-    // ¡Los mappers de MetodoPago fueron eliminados exitosamente!
 }

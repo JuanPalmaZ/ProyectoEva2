@@ -12,7 +12,6 @@ public class AdminMapper {
         if (request == null) return null;
         
         LogAuditoria log = new LogAuditoria();
-        log.setUsuarioId(request.usuarioId());
         log.setAccion(request.accion());
         log.setDetalle(request.detalle());
         return log;

@@ -2,7 +2,8 @@ package cl.paris.marketplace.ms.administracion.controller;
  
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // Importación para el candado de seguridad
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication; 
 import org.springframework.web.bind.annotation.*;
  
 import cl.paris.marketplace.ms.administracion.dto.AdminAccionRequest;
@@ -17,7 +18,7 @@ import java.util.UUID;
  
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')") // REGLA DE ORO: Solo los usuarios con rol ADMIN pueden tocar este controlador completo
+@PreAuthorize("hasRole('ADMIN')") // REGLA DE ORO: Seguridad por Defecto
 public class AdminController {
  
     private final AdminService adminService;
@@ -26,13 +27,13 @@ public class AdminController {
         this.adminService = adminService;
     }
  
-    // ==========================================
-    // ENDPOINTS: AUDITORÍA MANUAL
-    // ==========================================
-    
     @PostMapping("/auditoria")
-    public ResponseEntity<AdminAccionResponse> registrarAccionManual(@Valid @RequestBody AdminAccionRequest request) {
-        AdminAccionResponse response = adminService.registrarAccionManual(request);
+    public ResponseEntity<AdminAccionResponse> registrarAccionManual(
+            @Valid @RequestBody AdminAccionRequest request,
+            Authentication authentication) {
+        
+        UUID adminId = UUID.fromString(authentication.getCredentials().toString());
+        AdminAccionResponse response = adminService.registrarAccionManual(request, adminId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
  
@@ -46,19 +47,23 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listarPorUsuarioAdmin(usuarioId));
     }
  
-    // ==========================================
-    // ENDPOINTS: MODERACIÓN DE NEGOCIO (Usando @RequestBody)
-    // ==========================================
- 
     @PostMapping("/productos/moderar")
-    public ResponseEntity<AdminAccionResponse> moderarProducto(@Valid @RequestBody ModerarProductoRequest request) {
-        AdminAccionResponse response = adminService.moderarProducto(request);
+    public ResponseEntity<AdminAccionResponse> moderarProducto(
+            @Valid @RequestBody ModerarProductoRequest request,
+            Authentication authentication) {
+        
+        UUID adminId = UUID.fromString(authentication.getCredentials().toString());
+        AdminAccionResponse response = adminService.moderarProducto(request, adminId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
  
     @PostMapping("/usuarios/estado")
-    public ResponseEntity<AdminAccionResponse> cambiarEstadoUsuario(@Valid @RequestBody EstadoUsuarioRequest request) {
-        AdminAccionResponse response = adminService.cambiarEstadoUsuario(request);
+    public ResponseEntity<AdminAccionResponse> cambiarEstadoUsuario(
+            @Valid @RequestBody EstadoUsuarioRequest request,
+            Authentication authentication) {
+        
+        UUID adminId = UUID.fromString(authentication.getCredentials().toString());
+        AdminAccionResponse response = adminService.cambiarEstadoUsuario(request, adminId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }

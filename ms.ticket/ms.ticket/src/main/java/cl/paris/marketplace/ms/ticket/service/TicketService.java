@@ -7,9 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import cl.paris.marketplace.ms.ticket.client.VentaClient;
+import cl.paris.marketplace.ms.ticket.dto.ActualizarEstadoTicketRequest;
 import cl.paris.marketplace.ms.ticket.dto.TicketRequest;
 import cl.paris.marketplace.ms.ticket.dto.TicketResponse;
-import cl.paris.marketplace.ms.ticket.dto.ActualizarEstadoTicketRequest;
+import cl.paris.marketplace.ms.ticket.dto.VentaResponse;
 import cl.paris.marketplace.ms.ticket.mapper.TicketMapper;
 import cl.paris.marketplace.ms.ticket.model.Ticket;
 import cl.paris.marketplace.ms.ticket.repository.TicketRepository;
@@ -20,7 +21,7 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final TicketMapper ticketMapper;
-    private final VentaClient ventaClient; // Nueva inyección
+    private final VentaClient ventaClient; 
 
     public TicketService(
             TicketRepository ticketRepository, 
@@ -37,8 +38,8 @@ public class TicketService {
     
     @Transactional
     public TicketResponse abrirTicket(TicketRequest request, UUID clienteIdFidedigno) {
-        if (request.pedidoId() == null || request.vendedorId() == null) {
-            throw new RuntimeException("Debe asociar obligatoriamente un pedido y un vendedor para abrir una disputa.");
+        if (request.pedidoId() == null) {
+            throw new RuntimeException("Debe asociar obligatoriamente un pedido para abrir una disputa.");
         }
 
         if (request.asunto() == null || request.asunto().trim().isEmpty()) {
@@ -46,17 +47,26 @@ public class TicketService {
         }
 
         // ======================================================
-        // PUENTE INTERNO: Validar que el pedido realmente exista
+        // PUENTE INTERNO: Validar pedido y AUTODESCUBRIR al Vendedor
         // ======================================================
+        VentaResponse ventaInfo;
         try {
-            ventaClient.buscarPorId(request.pedidoId());
+            ventaInfo = ventaClient.buscarPorId(request.pedidoId());
         } catch (FeignException.NotFound e) {
             throw new RuntimeException("Error: El pedido especificado (" + request.pedidoId() + ") no existe en el sistema de ventas.");
         } catch (Exception e) {
             throw new RuntimeException("Error de comunicación al intentar validar el pedido con el servicio de ventas.");
         }
 
+        // ¡TU MEJORA APLICADA AQUÍ! Extraemos el vendedor directamente de la boleta.
+        if (ventaInfo.detalles() == null || ventaInfo.detalles().isEmpty()) {
+            throw new RuntimeException("Error Crítico: El pedido no tiene detalles válidos.");
+        }
+        UUID vendedorAutodescubierto = ventaInfo.detalles().get(0).proveedorId();
+
         Ticket ticket = ticketMapper.toEntity(request, clienteIdFidedigno);
+        ticket.setVendedorId(vendedorAutodescubierto); // Inyectamos el ID que el sistema descubrió solo
+        
         Ticket ticketGuardado = ticketRepository.save(ticket);
         
         return ticketMapper.toResponse(ticketGuardado);
@@ -90,46 +100,30 @@ public class TicketService {
                 .toList(); 
     }
 
-    // ==========================================
-    // LÓGICA DE NEGOCIO: EXPOSICIÓN Y CONSULTAS (SISTEMA DE MENSAJERÍA)
-    // ==========================================
-
     @Transactional(readOnly = true)
     public List<TicketResponse> obtenerTicketsPorPedido(UUID pedidoId) {
         List<Ticket> tickets = ticketRepository.findByPedidoIdOrderByFechaCreacionDesc(pedidoId);
-        
         if (tickets.isEmpty()) {
-            throw new RuntimeException("No se encontraron tickets de disputa asociados al pedido especificado.");
+            throw new RuntimeException("No se encontraron tickets asociados al pedido especificado.");
         }
-
-        return tickets.stream()
-                .map(ticketMapper::toResponse)
-                .toList();
+        return tickets.stream().map(ticketMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<TicketResponse> obtenerTicketsPorVendedor(UUID vendedorId) {
         List<Ticket> tickets = ticketRepository.findByVendedorIdOrderByFechaCreacionDesc(vendedorId);
-        
         if (tickets.isEmpty()) {
-            throw new RuntimeException("No se encontraron reclamos ni disputas registradas para el vendedor especificado.");
+            throw new RuntimeException("No se encontraron reclamos registrados para el vendedor especificado.");
         }
-
-        return tickets.stream()
-                .map(ticketMapper::toResponse)
-                .toList();
+        return tickets.stream().map(ticketMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<TicketResponse> obtenerTicketsPorCliente(UUID clienteId) {
         List<Ticket> tickets = ticketRepository.findByClienteIdOrderByFechaCreacionDesc(clienteId);
-        
         if (tickets.isEmpty()) {
-            throw new RuntimeException("El cliente especificado no registra tickets de soporte ni disputas creadas.");
+            throw new RuntimeException("El cliente especificado no registra tickets creados.");
         }
-
-        return tickets.stream()
-                .map(ticketMapper::toResponse)
-                .toList();
+        return tickets.stream().map(ticketMapper::toResponse).toList();
     }
 }

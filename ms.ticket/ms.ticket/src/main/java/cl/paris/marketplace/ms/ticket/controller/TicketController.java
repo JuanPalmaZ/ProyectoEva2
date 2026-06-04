@@ -1,19 +1,25 @@
 package cl.paris.marketplace.ms.ticket.controller;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import cl.paris.marketplace.ms.ticket.dto.ActualizarEstadoTicketRequest;
 import cl.paris.marketplace.ms.ticket.dto.TicketRequest;
 import cl.paris.marketplace.ms.ticket.dto.TicketResponse;
-import cl.paris.marketplace.ms.ticket.dto.ActualizarEstadoTicketRequest;
 import cl.paris.marketplace.ms.ticket.service.TicketService;
 import jakarta.validation.Valid;
-
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/tickets")
@@ -21,22 +27,17 @@ public class TicketController {
 
     private final TicketService ticketService;
 
-    // Inyección por constructor bajo el estándar estricto de tu equipo
     public TicketController(TicketService ticketService) {
         this.ticketService = ticketService;
     }
 
-    // ==========================================
-    // ENDPOINT: APERTURA DE DISPUTA POR EL CLIENTE
-    // ==========================================
     @PostMapping
-    @PreAuthorize("hasRole('CLIENTE')") // Solo los clientes de Paris.cl inician reclamos
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<?> abrirTicket(
             @Valid @RequestBody TicketRequest request,
             Authentication authentication
     ) {
         try {
-            // Escudo Anti-Null: Revisamos si Spring borró la credencial
             if (authentication.getCredentials() == null) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error Crítico: El usuarioId no se encontró en el token.");
@@ -45,7 +46,6 @@ public class TicketController {
             String credencialesStr = authentication.getCredentials().toString();
             UUID clienteId;
             
-            // Escudo Anti-Formato: Revisamos si realmente es un UUID
             try {
                 clienteId = UUID.fromString(credencialesStr);
             } catch (IllegalArgumentException e) {
@@ -54,7 +54,7 @@ public class TicketController {
             }
             
             TicketResponse response = ticketService.abrirTicket(request, clienteId);
-            return new ResponseEntity<>(response, HttpStatus.CREATED); // Retorna 201 Created
+            return new ResponseEntity<>(response, HttpStatus.CREATED); 
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -62,37 +62,27 @@ public class TicketController {
         }
     }
 
-    // ==========================================
-    // ENDPOINT: RESOLUCIÓN DE LA DISPUTA
-    // ==========================================
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROVEEDOR')") // El administrador o la tienda socia resuelven el caso
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROVEEDOR')") 
     public ResponseEntity<TicketResponse> cambiarEstado(
             @PathVariable UUID id, 
             @Valid @RequestBody ActualizarEstadoTicketRequest request) {
         TicketResponse response = ticketService.cambiarEstado(id, request);
-        return ResponseEntity.ok(response); // Retorna 200 OK
+        return ResponseEntity.ok(response);
     }
 
-    // ==========================================
-    // ENDPOINTS: CONSULTA Y BANDEJA DE MENSAJERÍA
-    // ==========================================
-
-    // Historial global para paneles de administración interna
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<TicketResponse>> listarTodos() {
         return ResponseEntity.ok(ticketService.listarTodosLosTickets());
     }
 
-    // Bandeja personal para que el Cliente revise sus disputas activas (Candado Anti-IDOR)
     @GetMapping("/cliente/{clienteId}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #clienteId.toString() == authentication.credentials)")
     public ResponseEntity<List<TicketResponse>> listarPorCliente(@PathVariable UUID clienteId) {
         return ResponseEntity.ok(ticketService.obtenerTicketsPorCliente(clienteId));
     }
 
-    // Bandeja de entrada para que el Vendedor gestione los reclamos que le abrieron (Candado Anti-IDOR)
     @GetMapping("/vendedor/{vendedorId}")
     @PreAuthorize("hasRole('ADMIN') or (hasRole('PROVEEDOR') and #vendedorId.toString() == authentication.credentials)")
     public ResponseEntity<List<TicketResponse>> listarPorVendedor(@PathVariable UUID vendedorId) {

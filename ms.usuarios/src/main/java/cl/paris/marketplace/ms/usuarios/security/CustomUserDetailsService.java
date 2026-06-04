@@ -2,6 +2,7 @@ package cl.paris.marketplace.ms.usuarios.security;
 
 import java.util.Collections;
 
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,6 +24,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+
+        // Escudo administrativo
+        if (usuario.getBaneado()) {
+            throw new LockedException("Acceso denegado: Esta cuenta ha sido suspendida por la administración de la plataforma.");
+        }
 
         // ¡AQUÍ ESTÁ LA MAGIA! Nos aseguramos de que el rol tenga el prefijo "ROLE_"
         String nombreRol = usuario.getRol().getNombreRol();

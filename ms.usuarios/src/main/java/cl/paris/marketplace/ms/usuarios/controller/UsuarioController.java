@@ -5,7 +5,10 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,12 +25,11 @@ import cl.paris.marketplace.ms.usuarios.service.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/usuarios") // Ruta base actualizada para este microservicio
+@RequestMapping("/api/usuarios") 
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
 
-    // Inyección de dependencias por constructor
     public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
     }
@@ -43,7 +45,6 @@ public class UsuarioController {
 
     @GetMapping
     public ResponseEntity<List<UsuarioResponse>> buscarUsuarios(@RequestParam(required = false) String email) {
-        // Endpoint para listar todos o buscar por correo
         return ResponseEntity.ok(usuarioService.buscarUsuarios(email));
     }
 
@@ -54,16 +55,27 @@ public class UsuarioController {
     }
 
     // ==========================================
+    // ENDPOINT ADMINISTRATIVO (Llamado vía Feign)
+    // ==========================================
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/estado-baneo")
+    public ResponseEntity<Void> actualizarEstadoBaneo(
+            @PathVariable UUID id, 
+            @RequestParam Boolean baneo) {
+        
+        usuarioService.actualizarEstadoBaneo(id, baneo);
+        return ResponseEntity.ok().build();
+    }
+
+    // ==========================================
     // ENDPOINTS: PERFILES
     // ==========================================
     @PostMapping("/perfiles")
     public ResponseEntity<PerfilResponse> crearPerfil(
             @Valid @RequestBody PerfilRequest request,
-            org.springframework.security.core.Authentication authentication) {
-
-        // ¡Magia de seguridad! Extraemos el email real que viene dentro del Token
+            Authentication authentication) {
+        
         String emailDelToken = authentication.getName();
-
         PerfilResponse response = usuarioService.crearPerfil(request, emailDelToken);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

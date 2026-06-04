@@ -6,6 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import cl.paris.marketplace.ms.administracion.client.ProductoClient;
+import cl.paris.marketplace.ms.administracion.client.UsuarioClient;
 import cl.paris.marketplace.ms.administracion.dto.AdminAccionRequest;
 import cl.paris.marketplace.ms.administracion.dto.AdminAccionResponse;
 import cl.paris.marketplace.ms.administracion.dto.EstadoUsuarioRequest;
@@ -13,33 +15,37 @@ import cl.paris.marketplace.ms.administracion.dto.ModerarProductoRequest;
 import cl.paris.marketplace.ms.administracion.mapper.AdminMapper;
 import cl.paris.marketplace.ms.administracion.model.LogAuditoria;
 import cl.paris.marketplace.ms.administracion.repository.LogAuditoriaRepository;
+import feign.FeignException;
 
 @Service
 public class AdminService {
 
     private final LogAuditoriaRepository logRepository;
     private final AdminMapper adminMapper;
+    private final ProductoClient productoClient;
+    private final UsuarioClient usuarioClient;
 
-    // Inyección por constructor idéntica al estándar de tu equipo
-    public AdminService(LogAuditoriaRepository logRepository, AdminMapper adminMapper) {
+    public AdminService(
+            LogAuditoriaRepository logRepository, 
+            AdminMapper adminMapper,
+            ProductoClient productoClient,
+            UsuarioClient usuarioClient) {
         this.logRepository = logRepository;
         this.adminMapper = adminMapper;
+        this.productoClient = productoClient;
+        this.usuarioClient = usuarioClient;
     }
 
-    // ==========================================
-    // LÓGICA DE NEGOCIO: AUDITORÍA MANUAL
-    // ==========================================
-    
     @Transactional
-    public AdminAccionResponse registrarAccionManual(AdminAccionRequest request) {
-        // Validación previa antes de guardar (Ejemplo de consistencia con el servicio de usuarios)
+    public AdminAccionResponse registrarAccionManual(AdminAccionRequest request, UUID adminId) {
         if (request.accion() == null || request.accion().trim().isEmpty()) {
             throw new RuntimeException("El tipo de acción de auditoría no puede estar vacío.");
         }
 
         LogAuditoria log = adminMapper.toEntity(request);
-        LogAuditoria logGuardado = logRepository.save(log);
+        log.setUsuarioId(adminId); 
         
+        LogAuditoria logGuardado = logRepository.save(log);
         return adminMapper.toResponse(logGuardado);
     }
 
@@ -47,39 +53,36 @@ public class AdminService {
     public List<AdminAccionResponse> listarHistorial() {
         return logRepository.findAll().stream()
                 .map(adminMapper::toResponse)
-                .toList(); // Uso de .toList() nativo igual que tu compañero
+                .toList(); 
     }
 
     @Transactional(readOnly = true)
     public List<AdminAccionResponse> listarPorUsuarioAdmin(UUID usuarioId) {
         List<LogAuditoria> logs = logRepository.findByUsuarioIdOrderByFechaAccionDesc(usuarioId);
-        
         if (logs.isEmpty()) {
             throw new RuntimeException("No se encontraron registros de auditoría para el administrador especificado.");
         }
-
-        return logs.stream()
-                .map(adminMapper::toResponse)
-                .toList();
+        return logs.stream().map(adminMapper::toResponse).toList();
     }
 
-    // ==========================================
-    // LÓGICA DE NEGOCIO: MODERACIÓN (ACCIONES REALES DE ADMIN)
-    // ==========================================
-
     @Transactional
-    public AdminAccionResponse moderarProducto(ModerarProductoRequest request) {
-        // Validación de consistencia del estado del negocio en Paris.cl
+    public AdminAccionResponse moderarProducto(ModerarProductoRequest request, UUID adminId) {
         String estadoUpper = request.estado().toUpperCase();
         if (!estadoUpper.equals("APROBADO") && !estadoUpper.equals("RECHAZADO")) {
             throw new RuntimeException("Estado de moderación inválido. Debe ser 'APROBADO' o 'RECHAZADO'.");
+        }
+
+        try {
+            productoClient.actualizarEstadoModeracion(request.productoId(), estadoUpper);
+        } catch (FeignException e) {
+            throw new RuntimeException("Fallo al intentar aplicar la moderación en el servicio de Productos. El producto podría no existir.");
         }
 
         String detalleLog = String.format("El administrador cambió el estado del producto ID [%s] a [%s]. Motivo: %s", 
                 request.productoId(), estadoUpper, request.motivo());
 
         LogAuditoria log = new LogAuditoria();
-        log.setUsuarioId(request.adminId());
+        log.setUsuarioId(adminId);
         log.setAccion("MODERAR_PRODUCTO");
         log.setDetalle(detalleLog);
         
@@ -88,13 +91,19 @@ public class AdminService {
     }
 
     @Transactional
-    public AdminAccionResponse cambiarEstadoUsuario(EstadoUsuarioRequest request) {
+    public AdminAccionResponse cambiarEstadoUsuario(EstadoUsuarioRequest request, UUID adminId) {
+        try {
+            usuarioClient.actualizarEstadoBaneo(request.usuarioId(), request.baneo());
+        } catch (FeignException e) {
+            throw new RuntimeException("Fallo al intentar cambiar el estado del usuario en el servicio de Usuarios.");
+        }
+
         String accionTipo = request.baneo() ? "BANEAR_USUARIO" : "ACTIVAR_USUARIO";
         String detalleLog = String.format("El administrador aplicó [%s] al usuario ID [%s]. Razón: %s", 
                 accionTipo, request.usuarioId(), request.razon());
 
         LogAuditoria log = new LogAuditoria();
-        log.setUsuarioId(request.adminId());
+        log.setUsuarioId(adminId);
         log.setAccion(accionTipo);
         log.setDetalle(detalleLog);
         

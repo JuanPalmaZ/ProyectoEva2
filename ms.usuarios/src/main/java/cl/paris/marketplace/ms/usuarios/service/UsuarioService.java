@@ -7,7 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import cl.paris.marketplace.ms.usuarios.client.MetodoPagoClient; // ¡NUEVO! Importación para atrapar el portazo de seguridad
+import cl.paris.marketplace.ms.usuarios.client.MetodoPagoClient;
 import cl.paris.marketplace.ms.usuarios.dto.MetodoPagoResponse;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilRequest;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilResponse;
@@ -33,11 +33,8 @@ public class UsuarioService {
     private final PerfilRepository perfilRepository;
     private final UsuarioMapper usuarioMapper;
     private final MetodoPagoClient metodoPagoClient;
-    
-    // Declaramos la máquina encriptadora
     private final PasswordEncoder passwordEncoder;
 
-    // Inyección por constructor
     public UsuarioService(UsuarioRepository usuarioRepository,
             RolRepository rolRepository,
             PerfilRepository perfilRepository,
@@ -66,13 +63,9 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("El Rol especificado no existe."));
 
         Usuario usuario = usuarioMapper.toUsuarioEntity(request, rol);
-        
-        // Aquí ocurre la magia de seguridad. 
-        // Sobrescribimos la contraseña plana con el Hash de BCrypt justo antes de guardar.
         usuario.setPasswordHash(passwordEncoder.encode(request.password()));
         
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
-        
         return usuarioMapper.toUsuarioResponse(usuarioGuardado);
     }
 
@@ -83,38 +76,40 @@ public class UsuarioService {
         return usuarioMapper.toUsuarioResponse(usuario);
     }
 
-    // Método agregado para soportar el buscador del controlador
     @Transactional(readOnly = true)
     public List<UsuarioResponse> buscarUsuarios(String email) {
         List<Usuario> usuarios;
-
         if (email == null || email.trim().isEmpty()) {
             usuarios = usuarioRepository.findAll(); 
         } else {
             usuarios = usuarioRepository.findByEmailContainingIgnoreCase(email); 
         }
+        return usuarios.stream().map(usuarioMapper::toUsuarioResponse).toList();
+    }
 
-        return usuarios.stream()
-                .map(usuarioMapper::toUsuarioResponse)
-                .toList();
+    // ==========================================
+    // PUERTA TRASERA: ADMINISTRACIÓN
+    // ==========================================
+    @Transactional
+    public void actualizarEstadoBaneo(UUID id, Boolean baneo) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado."));
+        
+        usuario.setBaneado(baneo);
+        usuarioRepository.save(usuario);
     }
 
     // ==========================================
     // LÓGICA DE NEGOCIO: PERFIL
     // ==========================================
     
-    // ==========================================
-    // LÓGICA DE NEGOCIO: PERFIL
-    // ==========================================
-    
     @Transactional
     public PerfilResponse crearPerfil(PerfilRequest request, String emailUsuario) {
-        // Buscamos usando el email del Token, no un ID expuesto
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Error Crítico: Identidad del token no existe en la base de datos."));
 
         if (perfilRepository.findByUsuarioId(usuario.getId()).isPresent()) {
-            throw new RuntimeException("Tu usuario ya cuenta con un perfil asociado.");
+            throw new RuntimeException("El usuario ya cuenta con un perfil asociado.");
         }
 
         Perfil perfil = usuarioMapper.toPerfilEntity(request, usuario);
@@ -138,11 +133,9 @@ public class UsuarioService {
         if (rolRepository.findByNombreRol(request.nombreRol()).isPresent()) {
             throw new RuntimeException("El rol ya existe en el sistema.");
         }
-
         Rol rol = new Rol();
         rol.setNombreRol(request.nombreRol());
         Rol rolGuardado = rolRepository.save(rol);
-
         return new RolResponse(rolGuardado.getId(), rolGuardado.getNombreRol());
     }
 
@@ -159,25 +152,19 @@ public class UsuarioService {
     
     @Transactional(readOnly = true)
     public UsuarioCompletoResponse obtenerUsuarioCompleto(UUID usuarioId) {
-        // 1. Obtener el Usuario
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado."));
 
-        // 2. Mapear el Rol
         RolResponse rolResponse = new RolResponse(usuario.getRol().getId(), usuario.getRol().getNombreRol());
 
-        // 3. Buscar el Perfil de forma segura
         PerfilResponse perfilResponse = perfilRepository.findByUsuarioId(usuarioId)
                 .map(usuarioMapper::toPerfilResponse)
                 .orElse(null); 
 
-        // 4. Buscar las tarjetas usando OpenFeign hacia ms-clientes
         List<MetodoPagoResponse> metodosPagoResponse;
         try {
             metodosPagoResponse = metodoPagoClient.obtenerMetodosPagoUsuario(usuarioId);
         } catch (FeignException.Forbidden e) {
-            // ¡EL CANDADO! Si el admin intentó ver las tarjetas, ms-clientes devuelve 403.
-            // Lo atrapamos aquí en silencio y devolvemos la lista vacía.
             System.out.println("Acceso denegado: El usuario no tiene rol CLIENTE para ver métodos de pago.");
             metodosPagoResponse = java.util.Collections.emptyList();
         } catch (FeignException e) {
@@ -188,7 +175,6 @@ public class UsuarioService {
             metodosPagoResponse = java.util.Collections.emptyList();
         }
 
-        // 5. Ensamblar todo el paquete
         return new UsuarioCompletoResponse(
                 usuario.getId(),
                 usuario.getEmail(),

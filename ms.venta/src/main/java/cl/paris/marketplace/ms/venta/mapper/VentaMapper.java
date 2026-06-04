@@ -43,6 +43,7 @@ public interface VentaMapper {
                         .stream()
                         .map(detalle -> DetalleVentaResponse.builder()
                                 .productoId(detalle.getProductoId())
+                                .proveedorId(detalle.getProveedorId())
                                 .cantidad(detalle.getCantidad())
                                 .precioUnitario(detalle.getPrecioUnitario())
                                 .subtotal(detalle.getSubtotal())
