@@ -1,16 +1,22 @@
 package cl.paris.marketplace.ms.feedback.dto;
 
-import jakarta.validation.constraints.*;
 import java.util.UUID;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 public record FeedbackRequest(
-    @NotNull(message = "El ID del cliente es obligatorio") UUID clienteId,
-    UUID productoId, // Puede ser null si solo califica al vendedor
-    UUID vendedorId, // Puede ser null si solo califica al producto
+    // ¡ELIMINADOS! clienteId y vendedorId ya no se piden en el JSON
+    
+    @NotNull(message = "El ID del producto es obligatorio") 
+    UUID productoId,
     
     @NotNull(message = "La calificación es obligatoria")
-    @Min(value = 1, message = "La calificación mínima es 1")
-    @Max(value = 5, message = "La calificación máxima es 5") 
+    @Min(value = 1, message = "La calificación mínima es 1 estrella")
+    @Max(value = 5, message = "La calificación máxima es 5 estrellas") 
     Integer calificacion,
     
     @NotBlank(message = "El comentario no puede estar vacío")

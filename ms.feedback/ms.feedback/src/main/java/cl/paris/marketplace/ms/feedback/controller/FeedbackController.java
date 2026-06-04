@@ -1,17 +1,23 @@
 package cl.paris.marketplace.ms.feedback.controller;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // Candado de seguridad adaptado
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import cl.paris.marketplace.ms.feedback.dto.FeedbackRequest;
 import cl.paris.marketplace.ms.feedback.dto.FeedbackResponse;
 import cl.paris.marketplace.ms.feedback.service.FeedbackService;
 import jakarta.validation.Valid;
-
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/feedback")
@@ -19,46 +25,69 @@ public class FeedbackController {
 
     private final FeedbackService feedbackService;
 
-    // Inyección por constructor idéntica al estándar estricto de tu equipo
     public FeedbackController(FeedbackService feedbackService) {
         this.feedbackService = feedbackService;
     }
 
     // ==========================================
-    // ENDPOINTS: ACCIÓN DEL CLIENTE (ESCRITURA)
+    // ENDPOINTS: ESCRITURA
     // ==========================================
     
     @PostMapping
-    @PreAuthorize("hasRole('CLIENTE')") // REGLA DE ORO: Solo los usuarios con rol CLIENTE pueden publicar una reseña tras su compra
-    public ResponseEntity<FeedbackResponse> registrarFeedback(@Valid @RequestBody FeedbackRequest request) {
-        FeedbackResponse response = feedbackService.registrarFeedback(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED); // Retorna 201 Created idéntico a tu plantilla
+    @PreAuthorize("hasRole('CLIENTE')") 
+    public ResponseEntity<?> registrarFeedback(
+            @Valid @RequestBody FeedbackRequest request,
+            Authentication authentication
+    ) {
+        try {
+            if (authentication.getCredentials() == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error Crítico: Identidad no encontrada en el token.");
+            }
+
+            UUID clienteId;
+            try {
+                clienteId = UUID.fromString(authentication.getCredentials().toString());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error: El formato del Token no es válido.");
+            }
+            
+            FeedbackResponse response = feedbackService.registrarFeedback(request, clienteId);
+            return new ResponseEntity<>(response, HttpStatus.CREATED); 
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error procesando la reseña: " + e.getMessage());
+        }
     }
 
     // ==========================================
-    // ENDPOINTS: EXPOSICIÓN DE RESEÑAS (LECTURA)
+    // ENDPOINTS: LECTURA PÚBLICA / PRIVADA
     // ==========================================
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')") // Historial masivo para auditoría interna o paneles
+    @PreAuthorize("hasRole('ADMIN')") 
     public ResponseEntity<List<FeedbackResponse>> listarTodosLosFeedbacks() {
-        return ResponseEntity.ok(feedbackService.listarTodosLosFeedbacks()); // Retorna 200 OK nativo
+        return ResponseEntity.ok(feedbackService.listarTodosLosFeedbacks()); 
     }
 
+    // Los productos y su reputación son públicos para cualquier usuario logueado
     @GetMapping("/producto/{productoId}")
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')") // Expone las reseñas en la vitrina del producto para los usuarios
+    @PreAuthorize("isAuthenticated()") 
     public ResponseEntity<List<FeedbackResponse>> obtenerFeedbackPorProducto(@PathVariable UUID productoId) {
         return ResponseEntity.ok(feedbackService.obtenerFeedbackPorProducto(productoId));
     }
 
     @GetMapping("/vendedor/{vendedorId}")
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')") // CUMPLE EL DOCUMENTO: Expone la reputación y opiniones de un vendedor específico
+    @PreAuthorize("isAuthenticated()") 
     public ResponseEntity<List<FeedbackResponse>> obtenerFeedbackPorVendedor(@PathVariable UUID vendedorId) {
         return ResponseEntity.ok(feedbackService.obtenerFeedbackPorVendedor(vendedorId));
     }
 
+    // ¡CANDADO ANTI-IDOR! Solo tú (o un admin) pueden ver tu historial de reseñas
     @GetMapping("/cliente/{clienteId}")
-    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMIN')") // Permite ver el historial de opiniones que ha redactado un cliente
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #clienteId.toString() == authentication.credentials)")
     public ResponseEntity<List<FeedbackResponse>> obtenerFeedbackPorCliente(@PathVariable UUID clienteId) {
         return ResponseEntity.ok(feedbackService.obtenerFeedbackPorCliente(clienteId));
     }

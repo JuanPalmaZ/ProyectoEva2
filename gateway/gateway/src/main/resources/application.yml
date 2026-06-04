@@ -29,26 +29,41 @@ spring:
           predicates:
             - Path=/api/proveedores/**
 
-        # ¡NUEVO! 4. Todo lo de catálogo, stock y categorías se va a MS-PRODUCTOS
+        # 4. Todo lo de catálogo, stock y categorías se va a MS-PRODUCTOS
         - id: productos-route
-          uri: lb://MS-PRODUCTOS  # <-- OJO: Debe ser IGUAL al spring.application.name de tu ms_productos
+          uri: lb://MS-PRODUCTOS
           predicates:
             - Path=/api/productos/**
           
+        # 5. Todo lo de carrito y checkout se va a MS-VENTA
         - id: ventas-route
-          uri: lb://MS-VENTA  # <-- Asegúrate de que tu ms_ventas se llame exactamente así en su application.yml
+          uri: lb://MS-VENTA
           predicates:
             - Path=/api/ventas/**
-            # 6. Todo lo de reclamos y disputas se va a MS-TICKET
+
+        # 6. Todo lo de reclamos y disputas se va a MS-TICKET
         - id: tickets-route
-          uri: lb://MS-TICKET  # <-- Revisa que coincida con el nombre en el yml de tickets
+          uri: lb://MS-TICKET
           predicates:
             - Path=/api/tickets/**
+
         # 7. Todo lo de correos y alertas se va a MS-NOTIFICACION
         - id: notificacion-route
           uri: lb://MS-NOTIFICACION
           predicates:
             - Path=/api/notificaciones/**
+
+        # ¡NUEVO! 8. Todo lo de gobernanza, moderación y baneos se va a MS-ADMINISTRACION
+        - id: administracion-route
+          uri: lb://MS-ADMINISTRACION
+          predicates:
+            - Path=/api/admin/**
+
+        # ¡NUEVO! 9. Todo lo de reseñas y calificaciones se va a MS-FEEDBACK
+        - id: feedback-route
+          uri: lb://MS-FEEDBACK
+          predicates:
+            - Path=/api/feedback/**
 
 # ==========================================
 # CONFIGURACIÓN DE EUREKA
