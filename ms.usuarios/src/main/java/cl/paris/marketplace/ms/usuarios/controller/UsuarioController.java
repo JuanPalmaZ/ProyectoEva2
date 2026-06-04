@@ -57,8 +57,14 @@ public class UsuarioController {
     // ENDPOINTS: PERFILES
     // ==========================================
     @PostMapping("/perfiles")
-    public ResponseEntity<PerfilResponse> crearPerfil(@Valid @RequestBody PerfilRequest request) {
-        PerfilResponse response = usuarioService.crearPerfil(request);
+    public ResponseEntity<PerfilResponse> crearPerfil(
+            @Valid @RequestBody PerfilRequest request,
+            org.springframework.security.core.Authentication authentication) {
+
+        // ¡Magia de seguridad! Extraemos el email real que viene dentro del Token
+        String emailDelToken = authentication.getName();
+
+        PerfilResponse response = usuarioService.crearPerfil(request, emailDelToken);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -71,7 +77,6 @@ public class UsuarioController {
     // ==========================================
     // ENDPOINTS: VISTA CONSOLIDADA (Usa Feign)
     // ==========================================
-    
     @GetMapping("/{id}/completo")
     public ResponseEntity<UsuarioCompletoResponse> obtenerUsuarioCompleto(@PathVariable UUID id) {
         return ResponseEntity.ok(usuarioService.obtenerUsuarioCompleto(id));

@@ -103,13 +103,18 @@ public class UsuarioService {
     // LÓGICA DE NEGOCIO: PERFIL
     // ==========================================
     
+    // ==========================================
+    // LÓGICA DE NEGOCIO: PERFIL
+    // ==========================================
+    
     @Transactional
-    public PerfilResponse crearPerfil(PerfilRequest request) {
-        Usuario usuario = usuarioRepository.findById(request.usuarioId())
-                .orElseThrow(() -> new RuntimeException("No se puede crear el perfil: Usuario no encontrado."));
+    public PerfilResponse crearPerfil(PerfilRequest request, String emailUsuario) {
+        // Buscamos usando el email del Token, no un ID expuesto
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new RuntimeException("Error Crítico: Identidad del token no existe en la base de datos."));
 
-        if (perfilRepository.findByUsuarioId(request.usuarioId()).isPresent()) {
-            throw new RuntimeException("El usuario ya cuenta con un perfil asociado.");
+        if (perfilRepository.findByUsuarioId(usuario.getId()).isPresent()) {
+            throw new RuntimeException("Tu usuario ya cuenta con un perfil asociado.");
         }
 
         Perfil perfil = usuarioMapper.toPerfilEntity(request, usuario);

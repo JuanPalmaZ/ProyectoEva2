@@ -44,20 +44,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) 
-            .authorizeHttpRequests(auth -> auth
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/usuarios", "/api/usuarios/**", 
-                    "/api/roles", "/api/roles/**", 
-                    "/api/auth", "/api/auth/**",
-                    "/error" // Permite exponer el verdadero error 500/400 en lugar de camuflarse en un 403
-                ).permitAll() 
-                .anyRequest().authenticated() 
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) 
-            )
-            .authenticationProvider(authenticationProvider()); 
+                        "/api/roles", "/api/roles/**",
+                        "/api/auth", "/api/auth/**",
+                        "/error"
+                ).permitAll()
+                // EXCEPCIÓN: Solo el método POST (Registro) es público en /api/usuarios
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios").permitAll()
+                // TODO LO DEMÁS (incluyendo crear perfil o buscar completo) REQUIERE TOKEN
+                .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authenticationProvider(authenticationProvider());
 
         return http.build();
     }
