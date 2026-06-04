@@ -11,4 +11,5 @@ public class ProductoResponse {
     private String nombre;
     private BigDecimal precio;
     private Integer stock;
+    private UUID proveedorId;
 }

@@ -24,7 +24,7 @@ public interface VentaMapper {
             for (DetalleVentaRequest item : request.getItems()) {
                 DetalleVenta detalle = DetalleVenta.builder()
                         .productoId(item.getProductoId())
-                        .proveedorId(item.getProveedorId())
+                        // ¡ELIMINADO! Ya no mapeamos el proveedorId desde el request
                         .cantidad(item.getCantidad())
                         .direccion(item.getDireccion())
                         .build();

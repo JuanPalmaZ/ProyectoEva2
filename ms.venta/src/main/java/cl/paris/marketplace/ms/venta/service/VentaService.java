@@ -27,7 +27,7 @@ public class VentaService {
 
     private final VentaRepository ventaRepository;
     private final ProductoClient productoClient;
-    private final NotificacionClient notificacionClient; // <-- Nuevo cliente inyectado
+    private final NotificacionClient notificacionClient; 
 
     public VentaService(
             VentaRepository ventaRepository,
@@ -78,8 +78,14 @@ public class VentaService {
                                 + productoReal.getStock());
             }
 
+            // ==========================================
+            // ¡MEJORA APLICADA AQUÍ!
+            // El proveedor se autodescubre desde el producto, no desde el cliente.
+            // ==========================================
+            detalle.setProveedorId(productoReal.getProveedorId()); // O getProveedorId() dependiendo de si usaste Record o Class en ProductoResponse
+
             detalle.setEstado(EstadoVenta.PENDIENTE);
-            detalle.setPrecioUnitario(productoReal.getPrecio());
+            detalle.setPrecioUnitario(productoReal.getPrecio()); // O precio() si es Record
 
             BigDecimal subtotal =
                     productoReal.getPrecio().multiply(
@@ -109,7 +115,7 @@ public class VentaService {
         }
 
         // ==========================================
-        // NUEVO: ENVIAR NOTIFICACIÓN DE COMPRA
+        // ENVIAR NOTIFICACIÓN DE COMPRA
         // ==========================================
         try {
             // Extraemos el correo del cliente que hizo la petición directamente desde el Token JWT
