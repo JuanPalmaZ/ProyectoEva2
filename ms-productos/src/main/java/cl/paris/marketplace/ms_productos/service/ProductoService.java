@@ -47,7 +47,6 @@ public class ProductoService {
             throw new RuntimeException("El SKU '" + request.sku() + "' ya se encuentra registrado en el Marketplace.");
         }
 
-        // 2. PUENTE INTERNO: Obtener el proveedorId real usando Feign Client
         UUID proveedorId;
         try {
             proveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
@@ -58,9 +57,7 @@ public class ProductoService {
         Categoria categoria = categoriaRepository.findById(request.categoriaId())
                 .orElseThrow(() -> new RuntimeException("La Categoría especificada no existe."));
 
-        // Pasamos el proveedorId al Mapper
         Producto producto = productoMapper.toProductoEntity(request, categoria, proveedorId);
-
         Producto productoGuardado = productoRepository.save(producto);
         return productoMapper.toProductoResponse(productoGuardado);
     }
@@ -70,16 +67,23 @@ public class ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado para modificar."));
 
-        if (!producto.getSku().equals(request.sku()) && productoRepository.findBySku(request.sku()).isPresent()) {
-            throw new RuntimeException("El SKU '" + request.sku() + "' ya se encuentra registrado por otro artículo.");
-        }
-
-        // PUENTE INTERNO: Validar quién está modificando
-        UUID proveedorId;
+        // TU MEJORA APLICADA: Autodescubrimos al proveedor dueño del producto
+        UUID proveedorDueñoDelProducto = producto.getProveedorId();
+        
+        UUID miProveedorId;
         try {
-            proveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
+            miProveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
         } catch (FeignException e) {
             throw new RuntimeException("Error: No se encontró un perfil de proveedor asociado a este usuario.");
+        }
+
+        // CANDADO DE SEGURIDAD
+        if (!proveedorDueñoDelProducto.equals(miProveedorId)) {
+            throw new RuntimeException("Acceso Denegado: No tienes permiso para modificar un producto que pertenece a otra empresa.");
+        }
+
+        if (!producto.getSku().equals(request.sku()) && productoRepository.findBySku(request.sku()).isPresent()) {
+            throw new RuntimeException("El SKU '" + request.sku() + "' ya se encuentra registrado por otro artículo.");
         }
 
         Categoria categoria = categoriaRepository.findById(request.categoriaId())
@@ -91,10 +95,29 @@ public class ProductoService {
         producto.setPrecio(request.precio());
         producto.setStock(request.stock());
         producto.setCategoria(categoria);
-        producto.setProveedorId(proveedorId); // Se re-asigna para asegurar consistencia
 
         Producto productoActualizado = productoRepository.save(producto);
         return productoMapper.toProductoResponse(productoActualizado);
+    }
+
+    // ==========================================
+    // PUERTA TRASERA: ADMINISTRACIÓN
+    // ==========================================
+    @Transactional
+    public void actualizarEstadoModeracion(UUID id, String estado) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado."));
+        
+        producto.setEstadoModeracion(estado);
+        
+        // Si el admin lo rechaza, lo bajamos del catálogo activo inmediatamente
+        if (estado.equals("RECHAZADO")) {
+            producto.setActivo(false);
+        } else if (estado.equals("APROBADO")) {
+            producto.setActivo(true);
+        }
+        
+        productoRepository.save(producto);
     }
 
     @Transactional(readOnly = true)
@@ -113,7 +136,6 @@ public class ProductoService {
 
     @Transactional(readOnly = true)
     public List<ProductoResponse> listarProductosPorProveedor(UUID usuarioId) {
-        // Para listar sus productos, primero sacamos su proveedorId
         UUID proveedorId;
         try {
             proveedorId = proveedorClient.obtenerIdProveedorInterno(usuarioId);
@@ -153,6 +175,7 @@ public class ProductoService {
     // ==========================================
     // LÓGICA DE NEGOCIO: CATEGORÍAS
     // ==========================================
+    
     @Transactional
     public CategoriaResponse crearCategoria(CategoriaRequest request) {
         if (categoriaRepository.findByNombre(request.nombre()).isPresent()) {

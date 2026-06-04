@@ -13,65 +13,72 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Entity
-@Table(name = "productos")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Entity
+@Table(name = "productos")
 public class Producto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String sku; 
+    @Column(name = "sku", unique = true, nullable = false, length = 50)
+    private String sku;
 
-    @Column(nullable = false, length = 150)
+    @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
-    @Column(columnDefinition = "TEXT") 
+    @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
-    // BigDecimal con precisión para montos exactos de dinero en el Marketplace
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "precio", nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
 
-    @Column(nullable = false)
+    @Column(name = "stock", nullable = false)
     private Integer stock;
+
+    // Tu campo original para el borrado lógico
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
+    // ==========================================
+    // ¡NUEVO CAMPO! Control de moderación
+    // ==========================================
+    @Column(name = "estado_moderacion", nullable = false, length = 20)
+    private String estadoModeracion = "APROBADO"; 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private Categoria categoria;
 
     @Column(name = "proveedor_id", nullable = false)
     private UUID proveedorId;
 
-    // Relación Muchos a Uno con Categorías
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
-
-    @Column(nullable = false)
-    private Boolean activo; // Para borrado lógico
-
     @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime fechaCreacion;
 
-    @Column(name = "estado_moderacion", length = 20)
-    private String estadoModeracion = "APROBADO"; // Por defecto, nace aprobado
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
 
     @PrePersist
     protected void onCreate() {
         this.fechaCreacion = LocalDateTime.now();
-        if (this.activo == null) {
-            this.activo = true; 
-        }
-        if (this.stock == null) {
-            this.stock = 0; 
-        }
+        this.fechaActualizacion = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.fechaActualizacion = LocalDateTime.now();
     }
 }

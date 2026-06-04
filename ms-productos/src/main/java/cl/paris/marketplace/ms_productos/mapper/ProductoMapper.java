@@ -1,6 +1,6 @@
 package cl.paris.marketplace.ms_productos.mapper;
 
-import java.util.UUID; // Importante agregar esto
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -13,29 +13,20 @@ import cl.paris.marketplace.ms_productos.model.Producto;
 @Component
 public class ProductoMapper {
 
-    // ==========================================
-    // MAPPERS PARA PRODUCTO
-    // ==========================================
-
-    // Ahora recibe el proveedorId inyectado desde el Service
     public Producto toProductoEntity(ProductoRequest request, Categoria categoria, UUID proveedorId) {
-        if (request == null) return null;
-        
         Producto producto = new Producto();
         producto.setSku(request.sku());
         producto.setNombre(request.nombre());
         producto.setDescripcion(request.descripcion());
         producto.setPrecio(request.precio());
         producto.setStock(request.stock());
-        producto.setProveedorId(proveedorId); // Se asigna el ID seguro
         producto.setCategoria(categoria);
-        
+        producto.setProveedorId(proveedorId);
+        // Los campos activo y estadoModeracion se inicializan por defecto en la Entidad
         return producto;
     }
 
     public ProductoResponse toProductoResponse(Producto producto) {
-        if (producto == null) return null;
-
         return new ProductoResponse(
                 producto.getId(),
                 producto.getSku(),
@@ -43,22 +34,14 @@ public class ProductoMapper {
                 producto.getDescripcion(),
                 producto.getPrecio(),
                 producto.getStock(),
-                producto.getProveedorId(),
-                producto.getCategoria().getId(),          
-                producto.getCategoria().getNombre(),      
-                producto.getCategoria().getDescripcion(), 
                 producto.getActivo(),
-                producto.getFechaCreacion()
+                producto.getEstadoModeracion(),
+                producto.getCategoria().getId(),
+                producto.getProveedorId()
         );
     }
 
-    // ==========================================
-    // MAPPERS PARA CATEGORÍA
-    // ==========================================
-
     public CategoriaResponse toCategoriaResponse(Categoria categoria) {
-        if (categoria == null) return null;
-        
         return new CategoriaResponse(
                 categoria.getId(),
                 categoria.getNombre(),
