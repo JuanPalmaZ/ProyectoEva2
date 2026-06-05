@@ -18,7 +18,7 @@ public interface ProveedorRepository extends JpaRepository<Proveedor, UUID> {
 
     List<Proveedor> findByUsuarioId(UUID usuarioId);
     
-    // Método nuevo para sacar el perfil de forma segura
+    // Método para sacar el perfil de forma segura
     Optional<Proveedor> findFirstByUsuarioId(UUID usuarioId);
 
     List<Proveedor> findByEstadoApro(String estadoApro);

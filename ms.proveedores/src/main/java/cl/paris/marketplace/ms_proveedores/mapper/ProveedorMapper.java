@@ -22,7 +22,6 @@ public class ProveedorMapper {
 
     public Proveedor toProveedorEntity(ProveedorRequest request) {
         Proveedor proveedor = new Proveedor();
-        // El usuarioId ya NO se saca del request, se lo inyecta el Service desde el Token.
         proveedor.setRazonSocial(request.razonSocial());
         proveedor.setRut(request.rut());
         // Regla de negocio: Todo proveedor nuevo entra en estado PENDIENTE
@@ -72,7 +71,7 @@ public class ProveedorMapper {
                 proveedor.getRazonSocial(),
                 proveedor.getRut(),
                 proveedor.getEstadoApro(),
-                documentosResponse // Se inyecta la lista de documentos ya transformada
+                documentosResponse 
         );
     }
 }

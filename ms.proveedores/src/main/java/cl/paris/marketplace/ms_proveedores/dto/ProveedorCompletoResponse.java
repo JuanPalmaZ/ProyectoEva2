@@ -9,7 +9,6 @@ public record ProveedorCompletoResponse(
         String razonSocial,
         String rut,
         String estadoApro,
-        
-        // ¡Aquí anidamos la lista de documentos!
+
         List<DocumentoResponse> documentos
 ) {}

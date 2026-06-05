@@ -54,7 +54,7 @@ public class ProveedorController {
         return ResponseEntity.ok(response);
     }
     
-    // --> RUTA NUEVA OCULTA: Exclusiva para que ms-productos la consulte vía Feign
+    // Ruta para que ms-productos la consulte vía Feign
     @GetMapping("/interno/usuario/{usuarioId}/id")
     public ResponseEntity<UUID> obtenerIdProveedorInterno(@PathVariable UUID usuarioId) {
         UUID proveedorId = proveedorService.obtenerIdProveedorPorUsuarioId(usuarioId);
