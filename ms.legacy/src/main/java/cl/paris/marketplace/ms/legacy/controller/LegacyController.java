@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +20,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/legacy")
-@PreAuthorize("isAuthenticated()")
+// QUITAMOS el @PreAuthorize de aquí arriba para poder controlar ruta por ruta
 public class LegacyController {
 
     private final LegacyService legacyService;
@@ -28,17 +29,30 @@ public class LegacyController {
         this.legacyService = legacyService;
     }
 
+    // Esta ruta queda abierta al público en SecurityConfig, pero protegida por un Header secreto
     @PostMapping("/sincronizar")
-    public ResponseEntity<LegacyRecordResponse> sincronizarDatoAntiguo(@Valid @RequestBody LegacySyncRequest request) {
+    public ResponseEntity<?> sincronizarDatoAntiguo(
+            @RequestHeader(value = "X-Internal-Secret", required = false) String secret,
+            @Valid @RequestBody LegacySyncRequest request) {
+        
+        // Verificamos que la petición venga de ms-usuarios y no de un atacante externo
+        if (!"paris-legacy-secret-2026".equals(secret)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body("Acceso denegado: Llave de sistema inválida o ausente.");
+        }
+
         LegacyRecordResponse response = legacyService.sincronizarDatoAntiguo(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED); // Retorna 201 Created
+        return new ResponseEntity<>(response, HttpStatus.CREATED); 
     }
 
+    // Protegemos individualmente las rutas de lectura para que solo entren administradores logeados
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/historial")
     public ResponseEntity<List<LegacyRecordResponse>> listarHistorialSincronizaciones() {
         return ResponseEntity.ok(legacyService.listarHistorialSincronizaciones());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/entidad/{tipoEntidad}")
     public ResponseEntity<List<LegacyRecordResponse>> listarPorTipoEntidad(@PathVariable String tipoEntidad) {
         return ResponseEntity.ok(legacyService.listarPorTipoEntidad(tipoEntidad));

@@ -2,6 +2,7 @@ package cl.paris.marketplace.ms.legacy.security;
  
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -12,7 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Permite aplicar restricciones con @PreAuthorize en las capas superiores
+@EnableMethodSecurity 
 public class SecurityConfig {
  
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -26,13 +27,14 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                // Absolutamente todas las peticiones a la administración requieren estar autenticadas
+                // 1. ABRIMOS LA PUERTA: Dejamos pasar los POST a sincronizar sin pedir Token JWT
+                .requestMatchers(HttpMethod.POST, "/api/legacy/sincronizar").permitAll()
+                // 2. CERRAMOS EL RESTO: Todo lo demás requiere estar autenticado
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            // Posicionamos el filtro JWT antes del filtro de usuario/contraseña estándar
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
  
         return http.build();
