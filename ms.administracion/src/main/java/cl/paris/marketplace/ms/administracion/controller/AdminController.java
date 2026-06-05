@@ -18,7 +18,7 @@ import java.util.UUID;
  
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')") // REGLA DE ORO: Seguridad por Defecto
+@PreAuthorize("hasRole('ADMIN')") 
 public class AdminController {
  
     private final AdminService adminService;

@@ -30,19 +30,19 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         
-        // 1. EL GUARDIA REVISA LAS CREDENCIALES
+        // 1. El guardia revisa las credenciales
         // Esto desencadena automáticamente la búsqueda en base de datos y la comparación con BCrypt
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
 
-        // 2. SI TODO ES CORRECTO, EXTRAEMOS AL USUARIO
+        // 2. Si todo es correcto, extraemos al usuario
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-        // 3. LA FÁBRICA CREA EL TOKEN
+        // 3. La fabrica crea el token
         String token = jwtService.generarToken(userDetails);
 
-        // 4. ENTREGAMOS EL TOKEN EN FORMATO JSON
+        // 4. Entregamos el token en formato JSON
         return ResponseEntity.ok(new AuthResponse(token));
     }
 }

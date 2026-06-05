@@ -14,7 +14,6 @@ public class NotificacionMapper {
     public Notificacion toEntity(NotificacionRequest request) {
         if (request == null) return null;
 
-        // Aprovechamos tu anotación @Builder del modelo
         return Notificacion.builder()
                 .destinatario(request.destinatario())
                 .asunto(request.asunto())

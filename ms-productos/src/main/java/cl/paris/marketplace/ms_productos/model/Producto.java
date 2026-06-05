@@ -48,13 +48,9 @@ public class Producto {
     @Column(name = "stock", nullable = false)
     private Integer stock;
 
-    // Tu campo original para el borrado lógico
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
 
-    // ==========================================
-    // ¡NUEVO CAMPO! Control de moderación
-    // ==========================================
     @Column(name = "estado_moderacion", nullable = false, length = 20)
     private String estadoModeracion = "APROBADO"; 
 

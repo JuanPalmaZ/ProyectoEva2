@@ -28,12 +28,12 @@ public class ClienteService {
     // ==========================================
     
     @Transactional
-    public MetodoPagoResponse agregarMetodoPago(MetodoPagoRequest request, UUID usuarioId) { // <-- 1. Recibimos el ID del token
+    public MetodoPagoResponse agregarMetodoPago(MetodoPagoRequest request, UUID usuarioId) { // Recibimos el ID del token
         
         // Transformar DTO a Entidad
         MetodoPago metodoPago = clienteMapper.toMetodoPagoEntity(request);
         
-        // <-- 2. ¡EL CAMBIO CLAVE! Le asignamos el ID seguro a la entidad
+        // Le asignamos el ID seguro a la entidad
         metodoPago.setUsuarioId(usuarioId); 
         
         // Guardar en la base de datos

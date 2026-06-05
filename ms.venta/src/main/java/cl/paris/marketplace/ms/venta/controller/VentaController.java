@@ -88,7 +88,6 @@ public class VentaController {
     // HISTORIAL CLIENTE
     // ==========================================
 
-    // CERRADURA ANTI-IDOR APLICADA AQUÍ
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #clienteId.toString() == authentication.credentials)")
     @GetMapping("/cliente/{clienteId}")
     public ResponseEntity<List<VentaResponse>> buscarPorCliente(

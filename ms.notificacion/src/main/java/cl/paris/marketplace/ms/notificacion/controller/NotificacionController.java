@@ -42,7 +42,7 @@ public class NotificacionController {
     @PreAuthorize("isAuthenticated()") // Cualquier usuario logueado puede revisar su propia bandeja
     public ResponseEntity<?> misNotificaciones(Authentication authentication) {
         try {
-            // EL TRUCO MAESTRO: En tu JwtAuthenticationFilter, el correo se guardó en el Principal (Name)
+            // En JwtAuthenticationFilter, el correo se guardó en el Principal (Name)
             String miEmail = authentication.getName(); 
             
             if (miEmail == null || miEmail.isEmpty()) {

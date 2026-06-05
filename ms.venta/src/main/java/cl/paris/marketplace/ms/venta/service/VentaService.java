@@ -79,13 +79,12 @@ public class VentaService {
             }
 
             // ==========================================
-            // ¡MEJORA APLICADA AQUÍ!
             // El proveedor se autodescubre desde el producto, no desde el cliente.
             // ==========================================
-            detalle.setProveedorId(productoReal.getProveedorId()); // O getProveedorId() dependiendo de si usaste Record o Class en ProductoResponse
+            detalle.setProveedorId(productoReal.getProveedorId()); 
 
             detalle.setEstado(EstadoVenta.PENDIENTE);
-            detalle.setPrecioUnitario(productoReal.getPrecio()); // O precio() si es Record
+            detalle.setPrecioUnitario(productoReal.getPrecio()); 
 
             BigDecimal subtotal =
                     productoReal.getPrecio().multiply(

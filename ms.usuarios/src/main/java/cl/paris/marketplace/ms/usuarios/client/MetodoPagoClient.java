@@ -11,7 +11,7 @@ import cl.paris.marketplace.ms.usuarios.dto.MetodoPagoResponse;
 
 @FeignClient(
     name = "ms-clientes", 
-    configuration = FeignClientConfig.class // <--- Aquí conectas el interceptor
+    configuration = FeignClientConfig.class 
 )
 public interface MetodoPagoClient {
     @GetMapping("/api/clientes/usuario/{usuarioId}/metodos-pago")

@@ -67,7 +67,6 @@ public class ProductoService {
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado para modificar."));
 
-        // TU MEJORA APLICADA: Autodescubrimos al proveedor dueño del producto
         UUID proveedorDueñoDelProducto = producto.getProveedorId();
         
         UUID miProveedorId;
@@ -77,7 +76,6 @@ public class ProductoService {
             throw new RuntimeException("Error: No se encontró un perfil de proveedor asociado a este usuario.");
         }
 
-        // CANDADO DE SEGURIDAD
         if (!proveedorDueñoDelProducto.equals(miProveedorId)) {
             throw new RuntimeException("Acceso Denegado: No tienes permiso para modificar un producto que pertenece a otra empresa.");
         }

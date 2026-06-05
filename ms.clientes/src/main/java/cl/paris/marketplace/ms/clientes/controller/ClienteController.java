@@ -37,9 +37,9 @@ public class ClienteController {
     @PostMapping("/metodos-pago")
     public ResponseEntity<MetodoPagoResponse> agregarMetodoPago(
             @Valid @RequestBody MetodoPagoRequest request,
-            Authentication authentication // <-- Interceptamos la seguridad aquí
+            Authentication authentication 
     ) {
-        // Extraemos el ID del token (según tu filtro, está guardado en credentials)
+        // Extraemos el ID del token 
         UUID usuarioId = UUID.fromString(authentication.getCredentials().toString());
         
         // Pasamos el request limpio y el ID recién extraído al Service
@@ -47,8 +47,6 @@ public class ClienteController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // Este lo dejamos tal cual porque tu @PreAuthorize ya hace el trabajo perfecto 
-    // de comparar el ID de la URL con el del Token.
     @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENTE') and #usuarioId.toString() == authentication.credentials)") 
     @GetMapping("/usuario/{usuarioId}/metodos-pago")
     public ResponseEntity<List<MetodoPagoResponse>> listarMetodosPagoUsuario(@PathVariable UUID usuarioId) {

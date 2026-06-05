@@ -17,7 +17,6 @@ public interface MetodoPagoRepository extends JpaRepository<MetodoPago, UUID> {
     List<MetodoPago> findByUsuarioId(UUID usuarioId);
 
     // Custom Query para buscar métodos de pago filtrados por tipo (CREDITO/DEBITO) de un usuario
-// CÓDIGO CORREGIDO
 @Query("SELECT m FROM MetodoPago m WHERE m.usuarioId = :usuarioId AND m.tipo = :tipo")
 List<MetodoPago> encontrarPorUsuarioYTipo(@Param("usuarioId") UUID usuarioId, @Param("tipo") String tipo);
 }

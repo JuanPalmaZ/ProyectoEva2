@@ -52,12 +52,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .toList();
 
                     // =========================================================
-                    // ¡NUEVO PASO 2! Extraemos el UUID directamente del aire
+                    // 2. Extraemos el UUID directamente del aire
                     // =========================================================
                     String usuarioId = jwtService.extraerUsuarioId(jwt);
 
                     // 3. Creamos la autenticación. 
-                    // OJO AQUÍ: Ponemos userEmail como "Identidad" y usuarioId como "Credenciales"
+                    // Ponemos userEmail como "Identidad" y usuarioId como "Credenciales"
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userEmail, usuarioId, authorities
                     );

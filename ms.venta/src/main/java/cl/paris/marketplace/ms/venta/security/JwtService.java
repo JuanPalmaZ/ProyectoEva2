@@ -21,12 +21,12 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    // 1. EXTRAER EMAIL
+    // 1. Extraer email
     public String extraerUsername(String token) {
         return extraerClaim(token, Claims::getSubject);
     }
 
-    // 2. EXTRAER ROLES
+    // 2. Extraer roles
     @SuppressWarnings("unchecked")
     public List<String> extraerRoles(String token) {
         Claims claims = extraerAllClaims(token);
@@ -41,7 +41,7 @@ public class JwtService {
                 .toList();
     }
 
-    // 3. EXTRAER EL UUID (LA CERRADURA) - VERSIÓN A PRUEBA DE BALAS
+    // 3. Extraer el UUID
     public String extraerUsuarioId(String token) {
         Claims claims = extraerAllClaims(token);
 
@@ -56,7 +56,7 @@ public class JwtService {
         return usuarioIdClaim.toString();
     }
 
-    // 4. VALIDAR TOKEN (Solo revisa que no esté vencido)
+    // 4. Validar token (Solo revisa que no esté vencido)
     public boolean isTokenValid(String token) {
         return !isTokenExpired(token);
     }

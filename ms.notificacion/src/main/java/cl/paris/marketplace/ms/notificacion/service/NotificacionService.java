@@ -32,7 +32,7 @@ public class NotificacionService {
     public NotificacionResponse crearNotificacion(NotificacionRequest request) {
         Notificacion notificacion = notificacionMapper.toEntity(request);
         
-        // AQUÍ A FUTURO: Lógica de envío real (ej. JavaMailSender, AWS SES o Twilio)
+        // Lógica de envío real (ej. JavaMailSender, AWS SES o Twilio)
         // Por ahora, simulamos que el sistema logró despachar el correo con éxito al instante.
         notificacion.setEstado(EstadoNotificacion.ENVIADO);
         notificacion.setFechaEnvio(LocalDateTime.now());

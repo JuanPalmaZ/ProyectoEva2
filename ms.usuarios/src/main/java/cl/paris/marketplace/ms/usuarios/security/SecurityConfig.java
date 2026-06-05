@@ -39,14 +39,13 @@ public class SecurityConfig {
                 ).permitAll()
                 // EXCEPCIÓN: Solo el método POST (Registro) es público en /api/usuarios
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/usuarios").permitAll()
-                // TODO LO DEMÁS (incluyendo crear perfil o buscar completo) REQUIERE TOKEN
+                // Todo lo demas (incluyendo crear perfil o buscar completo) requiere token
                 .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
-                // 🔥 LA LÍNEA CRÍTICA QUE FALTABA PARA ENLAZAR TU FILTRO 🔥
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

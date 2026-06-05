@@ -13,7 +13,7 @@ public class ClienteMapper {
     // MAPPERS PARA METODO DE PAGO
     // ==========================================
 
-    // Recibe directamente el DTO de entrada. Ya no necesita el objeto Usuario, 
+    // Recibe directamente el DTO de entrada. Ya no necesita el objeto Usuario,
     // solo tomará el UUID que venga en el JSON.
     public MetodoPago toMetodoPagoEntity(MetodoPagoRequest request) {
         MetodoPago metodoPago = new MetodoPago();
@@ -31,7 +31,6 @@ public class ClienteMapper {
                 metodoPago.getId(),
                 metodoPago.getUsuarioId(), // Agregado para que el frontend sepa de quién es la tarjeta
                 metodoPago.getTipo()
-                // Nota: Por seguridad, nunca devuelvas el tokenTarjeta en el Response a menos que sea estrictamente necesario.
         );
     }
 }

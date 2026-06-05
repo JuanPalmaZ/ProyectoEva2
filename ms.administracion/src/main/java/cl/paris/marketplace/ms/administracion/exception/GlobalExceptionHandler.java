@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
         respuesta.put("timestamp", LocalDateTime.now());
         respuesta.put("status", HttpStatus.BAD_REQUEST.value());
         respuesta.put("error", "Business Logic Error");
-        respuesta.put("message", ex.getMessage()); // Muestra tu mensaje personalizado
+        respuesta.put("message", ex.getMessage()); 
         respuesta.put("path", request.getDescription(false).replace("uri=", ""));
         
         return new ResponseEntity<>(respuesta, HttpStatus.BAD_REQUEST);

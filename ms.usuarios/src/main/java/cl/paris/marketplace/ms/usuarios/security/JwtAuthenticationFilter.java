@@ -76,7 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            System.err.println("🔥 ERROR CRÍTICO DENTRO DEL FILTRO 🔥");
+            System.err.println("ERROR CRÍTICO DENTRO DEL FILTRO");
             e.printStackTrace(); 
         }
         

@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record EstadoUsuarioRequest(
-    // ¡ELIMINADO! UUID adminId
-    
-    // Este se mantiene porque es el ID del usuario al que vamos a banear
     @NotNull(message = "El ID del usuario a modificar es obligatorio") UUID usuarioId, 
     @NotNull(message = "El estado de baneo es requerido (true/false)") Boolean baneo,
     @NotBlank(message = "La razón del cambio de estado es requerida") String razon
