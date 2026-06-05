@@ -43,7 +43,7 @@ public class ProveedorService {
         }
 
         Proveedor proveedor = proveedorMapper.toProveedorEntity(request);
-        proveedor.setUsuarioId(usuarioId); // <-- Inyectamos el ID del token
+        proveedor.setUsuarioId(usuarioId); 
         
         Proveedor proveedorGuardado = proveedorRepository.save(proveedor);
         
@@ -57,7 +57,7 @@ public class ProveedorService {
                 .toList();
     }
     
-    // --> MÉTODO NUEVO: Puente interno para ms-productos
+    // Puente interno para ms-productos
     @Transactional(readOnly = true)
     public UUID obtenerIdProveedorPorUsuarioId(UUID usuarioId) {
         Proveedor proveedor = proveedorRepository.findFirstByUsuarioId(usuarioId)
@@ -71,7 +71,7 @@ public class ProveedorService {
     
     @Transactional
     public DocumentoResponse agregarDocumento(DocumentoRequest request, UUID usuarioId) {
-        // Buscamos al proveedor usando su token de usuario, ya no pedimos el proveedorId
+        // Buscamos al proveedor usando su token de usuario
         Proveedor proveedor = proveedorRepository.findFirstByUsuarioId(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Error: No tienes un perfil de proveedor asociado."));
 

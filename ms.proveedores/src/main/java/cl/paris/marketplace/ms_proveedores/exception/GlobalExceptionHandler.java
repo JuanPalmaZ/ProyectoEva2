@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-// Nota: Cambié @ControllerAdvice por @RestControllerAdvice para que no necesites poner @ResponseBody
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
