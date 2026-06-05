@@ -66,6 +66,7 @@ public class UsuarioService {
         usuario.setPasswordHash(passwordEncoder.encode(request.password()));
         
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        
         return usuarioMapper.toUsuarioResponse(usuarioGuardado);
     }
 

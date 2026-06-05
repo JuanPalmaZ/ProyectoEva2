@@ -20,13 +20,11 @@ spring:
   # Conexión a PostgreSQL (NeonTech)
   # ===================================
   datasource:
-    # IMPORTANTE: Se apunta al esquema 'db_legacy_mock' exigido en la rúbrica
     url: jdbc:postgresql://ep-sweet-voice-ac645qo3-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
     username: neondb_owner
     password: npg_rfs10SMuCKcF
     driver-class-name: org.postgresql.Driver
     
-    # Pool de conexiones optimizado para el plan gratuito de Neon
     hikari:
       maximum-pool-size: 5
 
@@ -36,7 +34,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update # Creará la tabla 'legacy_records' automáticamente al iniciar
+      ddl-auto: update 
     show-sql: true # Muestra las consultas SQL en consola para pruebas
     properties:
       hibernate:
