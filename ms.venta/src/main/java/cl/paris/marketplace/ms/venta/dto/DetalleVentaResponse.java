@@ -15,5 +15,5 @@ public class DetalleVentaResponse {
     private BigDecimal subtotal;
     private String estado;
     private String direccion;
-    private UUID proveedorId; // Agrega esto en DetalleVentaResponse de ms.venta
+    private UUID proveedorId; 
 }

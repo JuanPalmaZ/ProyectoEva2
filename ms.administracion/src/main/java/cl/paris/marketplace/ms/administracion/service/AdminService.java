@@ -15,7 +15,6 @@ import cl.paris.marketplace.ms.administracion.dto.ModerarProductoRequest;
 import cl.paris.marketplace.ms.administracion.mapper.AdminMapper;
 import cl.paris.marketplace.ms.administracion.model.LogAuditoria;
 import cl.paris.marketplace.ms.administracion.repository.LogAuditoriaRepository;
-import feign.FeignException;
 
 @Service
 public class AdminService {
@@ -65,18 +64,23 @@ public class AdminService {
         return logs.stream().map(adminMapper::toResponse).toList();
     }
 
-    @Transactional
+   @Transactional
     public AdminAccionResponse moderarProducto(ModerarProductoRequest request, UUID adminId) {
         String estadoUpper = request.estado().toUpperCase();
         if (!estadoUpper.equals("APROBADO") && !estadoUpper.equals("RECHAZADO")) {
             throw new RuntimeException("Estado de moderación inválido. Debe ser 'APROBADO' o 'RECHAZADO'.");
         }
 
-        try {
+       try {
             productoClient.actualizarEstadoModeracion(request.productoId(), estadoUpper);
-        } catch (FeignException e) {
-            throw new RuntimeException("Fallo al intentar aplicar la moderación en el servicio de Productos. El producto podría no existir.");
+        } catch (Exception e) { 
+            System.err.println("=== ERROR INESPERADO AL LLAMAR A MS-PRODUCTOS ===");
+            System.err.println("Clase del error: " + e.getClass().getName());
+            System.err.println("Mensaje: " + e.getMessage());
+            e.printStackTrace(); 
+            throw new RuntimeException("Fallo al intentar aplicar la moderación. Revisa la consola.");
         }
+
 
         String detalleLog = String.format("El administrador cambió el estado del producto ID [%s] a [%s]. Motivo: %s", 
                 request.productoId(), estadoUpper, request.motivo());
@@ -85,17 +89,22 @@ public class AdminService {
         log.setUsuarioId(adminId);
         log.setAccion("MODERAR_PRODUCTO");
         log.setDetalle(detalleLog);
-        
+
         LogAuditoria guardado = logRepository.save(log);
         return adminMapper.toResponse(guardado);
     }
 
-    @Transactional
+   @Transactional
     public AdminAccionResponse cambiarEstadoUsuario(EstadoUsuarioRequest request, UUID adminId) {
-        try {
+
+       try {
             usuarioClient.actualizarEstadoBaneo(request.usuarioId(), request.baneo());
-        } catch (FeignException e) {
-            throw new RuntimeException("Fallo al intentar cambiar el estado del usuario en el servicio de Usuarios.");
+        } catch (Exception e) { 
+            System.err.println("=== ERROR INESPERADO AL LLAMAR A MS-USUARIOS ===");
+            System.err.println("Clase del error: " + e.getClass().getName());
+            System.err.println("Mensaje: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Fallo al intentar cambiar el estado del usuario.");
         }
 
         String accionTipo = request.baneo() ? "BANEAR_USUARIO" : "ACTIVAR_USUARIO";
@@ -106,8 +115,9 @@ public class AdminService {
         log.setUsuarioId(adminId);
         log.setAccion(accionTipo);
         log.setDetalle(detalleLog);
-        
+
         LogAuditoria guardado = logRepository.save(log);
         return adminMapper.toResponse(guardado);
     }
+
 }

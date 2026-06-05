@@ -16,7 +16,7 @@ import cl.paris.marketplace.ms.usuarios.service.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/roles") // ¡Ahora los roles tienen su propia ruta base independiente!
+@RequestMapping("/api/roles") 
 public class RolController {
 
     private final UsuarioService usuarioService;

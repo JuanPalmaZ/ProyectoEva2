@@ -75,12 +75,19 @@ public class UsuarioService {
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         
         // 4. Se prepara la petición para ms-legacy
-        // Nota: Asegúrate de que los parámetros del constructor (o setters) coincidan con tu clase LegacySyncRequest
         LegacySyncRequest legacyRequest = new LegacySyncRequest(
+             usuarioGuardado.getId().toString(),
             "CLIENTE", 
-            usuarioGuardado.getId().toString(),
             usuarioGuardado.getEmail()
-        );
+        ); 
+        try {
+            legacyClient.sincronizarUsuario(legacyRequest);
+            System.out.println("-> ÉXITO: Usuario sincronizado con ms-legacy");
+        } catch (feign.FeignException e) {
+            System.err.println("-> ADVERTENCIA: Falló la sincronización. Status: " + e.status());
+        } catch (Exception e) {
+            System.err.println("-> ADVERTENCIA: Error inesperado al contactar a legacy.");
+        }
 
         // 5. Se envía la información a ms-legacy mediante Feign
         legacyClient.sincronizarUsuario(legacyRequest);

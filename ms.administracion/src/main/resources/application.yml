@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: ms-admin # Nombre con el que se registrará en el panel de Eureka
+    name: ms-administracion # Nombre con el que se registrará en el panel de Eureka
   
   # ===================================
   # Configuración de Rendimiento

@@ -9,7 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication; 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping; 
@@ -82,7 +81,7 @@ public class ProductoController {
     // ENDPOINT ADMINISTRATIVO (Llamado vía Feign)
     // ==========================================
     @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{id}/estado-moderacion")
+    @PutMapping("/{id}/estado-moderacion")
     public ResponseEntity<Void> actualizarEstadoModeracion(
             @PathVariable UUID id, 
             @RequestParam String estado) {
