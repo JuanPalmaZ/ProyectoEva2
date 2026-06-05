@@ -7,7 +7,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import cl.paris.marketplace.ms.usuarios.client.LegacyClient;
 import cl.paris.marketplace.ms.usuarios.client.MetodoPagoClient;
+import cl.paris.marketplace.ms.usuarios.dto.LegacySyncRequest;
 import cl.paris.marketplace.ms.usuarios.dto.MetodoPagoResponse;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilRequest;
 import cl.paris.marketplace.ms.usuarios.dto.PerfilResponse;
@@ -34,19 +36,23 @@ public class UsuarioService {
     private final UsuarioMapper usuarioMapper;
     private final MetodoPagoClient metodoPagoClient;
     private final PasswordEncoder passwordEncoder;
+    private final LegacyClient legacyClient; // 1. Se declara el cliente de Legacy
 
+    // 2. Se inyecta el cliente en el constructor
     public UsuarioService(UsuarioRepository usuarioRepository,
             RolRepository rolRepository,
             PerfilRepository perfilRepository,
             UsuarioMapper usuarioMapper,
             MetodoPagoClient metodoPagoClient,
-            PasswordEncoder passwordEncoder) { 
+            PasswordEncoder passwordEncoder,
+            LegacyClient legacyClient) { 
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.perfilRepository = perfilRepository;
         this.usuarioMapper = usuarioMapper;
         this.metodoPagoClient = metodoPagoClient;
         this.passwordEncoder = passwordEncoder; 
+        this.legacyClient = legacyClient; 
     }
 
     // ==========================================
@@ -65,7 +71,19 @@ public class UsuarioService {
         Usuario usuario = usuarioMapper.toUsuarioEntity(request, rol);
         usuario.setPasswordHash(passwordEncoder.encode(request.password()));
         
+        // 3. Se guarda el usuario en la BD de ms-usuarios
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        
+        // 4. Se prepara la petición para ms-legacy
+        // Nota: Asegúrate de que los parámetros del constructor (o setters) coincidan con tu clase LegacySyncRequest
+        LegacySyncRequest legacyRequest = new LegacySyncRequest(
+            "CLIENTE", 
+            usuarioGuardado.getId().toString(),
+            usuarioGuardado.getEmail()
+        );
+
+        // 5. Se envía la información a ms-legacy mediante Feign
+        legacyClient.sincronizarUsuario(legacyRequest);
         
         return usuarioMapper.toUsuarioResponse(usuarioGuardado);
     }
